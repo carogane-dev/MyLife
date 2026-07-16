@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { createFridgeItem, lookupBarcode } from "./api.js";
 import type { FridgeItemDraft } from "./api.js";
+import { isGramsBasedUnit } from "./unitConversion.js";
 
 type Phase = "scanning" | "looking-up" | "confirm" | "saving" | "camera-error";
 
@@ -150,6 +151,24 @@ export default function ScanPage({ onBack }: { onBack: () => void }) {
               Unité
               <input type="text" value={draft.unit} onChange={(e) => updateDraft({ unit: e.target.value })} />
             </label>
+            {!isGramsBasedUnit(draft.unit) && (
+              <label>
+                Poids d'une {draft.unit || "unité"} (g)
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={draft.unitWeightGrams ?? ""}
+                  placeholder="ex. 60"
+                  onChange={(e) => updateDraft({ unitWeightGrams: e.target.value ? Number(e.target.value) : null })}
+                />
+              </label>
+            )}
+            {!isGramsBasedUnit(draft.unit) && (
+              <p className="scan-hint">
+                Utilisé pour calculer les calories quand tu manges une partie de la quantité (repli à 100g si laissé vide).
+              </p>
+            )}
             <label>
               Date de péremption
               <input

@@ -3,6 +3,7 @@ import { createFridgeItem, updateFridgeItem } from "./api.js";
 import type { FridgeItem, FridgeItemDraft } from "./api.js";
 import { DISPLAY_CATEGORIES, CATEGORY_NUTRITION_DEFAULTS } from "./fridgeCategories.js";
 import type { DisplayCategory } from "./fridgeCategories.js";
+import { isGramsBasedUnit } from "./unitConversion.js";
 
 function emptyDraft(): FridgeItemDraft {
   return {
@@ -11,6 +12,7 @@ function emptyDraft(): FridgeItemDraft {
     subcategory: "",
     quantity: 1,
     unit: "pièce",
+    unitWeightGrams: null,
     expiresAt: null,
     ...CATEGORY_NUTRITION_DEFAULTS[DISPLAY_CATEGORIES[0]],
     nutritionEstimated: false,
@@ -25,6 +27,7 @@ function toDraft(item: FridgeItem): FridgeItemDraft {
     subcategory: item.subcategory,
     quantity: item.quantity,
     unit: item.unit,
+    unitWeightGrams: item.unitWeightGrams,
     expiresAt: item.expiresAt.slice(0, 10),
     caloriesPer100g: item.caloriesPer100g,
     proteinPer100g: item.proteinPer100g,
@@ -116,6 +119,24 @@ export default function FridgeItemFormPage({
           Unité
           <input type="text" value={draft.unit} onChange={(e) => update({ unit: e.target.value })} />
         </label>
+        {!isGramsBasedUnit(draft.unit) && (
+          <label>
+            Poids d'une {draft.unit || "unité"} (g)
+            <input
+              type="number"
+              min="0"
+              step="any"
+              value={draft.unitWeightGrams ?? ""}
+              placeholder="ex. 60"
+              onChange={(e) => update({ unitWeightGrams: e.target.value ? Number(e.target.value) : null })}
+            />
+          </label>
+        )}
+        {!isGramsBasedUnit(draft.unit) && (
+          <p className="scan-hint">
+            Utilisé pour calculer les calories quand tu manges une partie de la quantité (repli à 100g si laissé vide).
+          </p>
+        )}
         <label>
           Date de péremption
           <input

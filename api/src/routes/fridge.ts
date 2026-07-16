@@ -68,6 +68,9 @@ fridgeRouter.get("/lookup/:barcode", requireAuth, async (req, res) => {
       subcategory,
       quantity: product.quantityGrams ?? 1,
       unit: product.quantityGrams !== null ? "g" : "pièce",
+      // Jamais fourni par Open Food Facts pour un article "pièce" (le poids
+      // d'un exemplaire varie) : l'utilisateur le renseigne s'il le connaît.
+      unitWeightGrams: null,
       // Jamais fournie par Open Food Facts (dépend du lot physique) :
       // l'utilisateur doit la renseigner lui-même avant de pouvoir valider.
       expiresAt: null,
@@ -94,6 +97,7 @@ fridgeRouter.post("/", requireAuth, async (req, res) => {
       quantity: body.quantity,
       unit: body.unit,
       barcode: isNonEmptyString(body.barcode) ? body.barcode : null,
+      unitWeightGrams: isFiniteNumber(body.unitWeightGrams) && body.unitWeightGrams > 0 ? body.unitWeightGrams : null,
       caloriesPer100g: body.caloriesPer100g,
       proteinPer100g: body.proteinPer100g,
       fatPer100g: body.fatPer100g,
@@ -131,6 +135,7 @@ fridgeRouter.put("/:id", requireAuth, async (req, res) => {
       quantity: body.quantity,
       unit: body.unit,
       barcode: isNonEmptyString(body.barcode) ? body.barcode : null,
+      unitWeightGrams: isFiniteNumber(body.unitWeightGrams) && body.unitWeightGrams > 0 ? body.unitWeightGrams : null,
       caloriesPer100g: body.caloriesPer100g,
       proteinPer100g: body.proteinPer100g,
       fatPer100g: body.fatPer100g,
