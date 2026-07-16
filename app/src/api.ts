@@ -230,10 +230,13 @@ export async function getConsumptionEntries(from: string, to: string): Promise<C
 }
 
 export async function getMealSuggestion(
-  excludeIds: string[] = []
+  excludeIds: string[] = [],
+  mealsRemaining = 3
 ): Promise<{ suggestion: MealSuggestion | null; reason?: string }> {
-  const query = excludeIds.length > 0 ? `?exclude=${excludeIds.map(encodeURIComponent).join(",")}` : "";
-  const res = await fetch(`${API_BASE_URL}/api/meal-suggestion${query}`, {
+  const params = new URLSearchParams();
+  if (excludeIds.length > 0) params.set("exclude", excludeIds.join(","));
+  params.set("meals", String(mealsRemaining));
+  const res = await fetch(`${API_BASE_URL}/api/meal-suggestion?${params.toString()}`, {
     method: "GET",
     credentials: "include",
   });
