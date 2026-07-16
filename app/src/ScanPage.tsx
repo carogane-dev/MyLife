@@ -150,6 +150,16 @@ export default function ScanPage({ onBack }: { onBack: () => void }) {
               Unité
               <input type="text" value={draft.unit} onChange={(e) => updateDraft({ unit: e.target.value })} />
             </label>
+            <label>
+              Date de péremption
+              <input
+                type="date"
+                value={draft.expiresAt ?? ""}
+                onChange={(e) => updateDraft({ expiresAt: e.target.value || null })}
+                required
+              />
+            </label>
+            <p className="scan-hint">Renseigne la date indiquée sur l'emballage (non fournie par le scan).</p>
           </div>
 
           <div className="scan-nutrition-preview">
@@ -171,7 +181,7 @@ export default function ScanPage({ onBack }: { onBack: () => void }) {
           {error && <p className="fridge-error">{error}</p>}
 
           <div className="scan-actions">
-            <button className="auth-submit" onClick={handleAdd} disabled={phase === "saving"}>
+            <button className="auth-submit" onClick={handleAdd} disabled={phase === "saving" || !draft.expiresAt}>
               {phase === "saving" ? "Ajout…" : "Ajouter au frigo"}
             </button>
             <button className="logout-button" onClick={resumeScanning} disabled={phase === "saving"}>

@@ -3,6 +3,7 @@ import { getFridgeItems } from "./api.js";
 import type { FridgeItem } from "./api.js";
 
 type GroupedItems = Record<string, Record<string, FridgeItem[]>>;
+type SortBy = "expiration" | "weight" | "name";
 
 function groupItems(items: FridgeItem[]): GroupedItems {
   const grouped: GroupedItems = {};
@@ -14,10 +15,31 @@ function groupItems(items: FridgeItem[]): GroupedItems {
   return grouped;
 }
 
+function sortItems(items: FridgeItem[], sortBy: SortBy): FridgeItem[] {
+  const copy = [...items];
+  switch (sortBy) {
+    case "expiration":
+      return copy.sort((a, b) => new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime());
+    case "weight":
+      return copy.sort((a, b) => a.quantity - b.quantity);
+    case "name":
+      return copy.sort((a, b) => a.name.localeCompare(b.name));
+  }
+}
+
+function formatExpiry(expiresAt: string): { label: string; urgency: "expired" | "soon" | "" } {
+  const diffDays = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+  const date = new Date(expiresAt).toLocaleDateString("fr-FR");
+  if (diffDays < 0) return { label: `Expiré (${date})`, urgency: "expired" };
+  if (diffDays <= 3) return { label: `Expire bientôt (${date})`, urgency: "soon" };
+  return { label: date, urgency: "" };
+}
+
 export default function FridgePage({ onBack }: { onBack: () => void }) {
   const [items, setItems] = useState<FridgeItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState<SortBy>("expiration");
 
   useEffect(() => {
     getFridgeItems()
@@ -43,6 +65,19 @@ export default function FridgePage({ onBack }: { onBack: () => void }) {
       </button>
       <h2>🧊 Frigo</h2>
 
+      {items !== null && items.length > 0 && (
+        <div className="fridge-sort-control">
+          <label>
+            Trier par :{" "}
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortBy)}>
+              <option value="expiration">Date de péremption</option>
+              <option value="weight">Poids</option>
+              <option value="name">Nom</option>
+            </select>
+          </label>
+        </div>
+      )}
+
       {items === null && !error && <p>Chargement…</p>}
       {error && <p className="fridge-error">{error}</p>}
       {items !== null && items.length === 0 && (
@@ -63,6 +98,7 @@ export default function FridgePage({ onBack }: { onBack: () => void }) {
                 {Object.entries(subcategories).map(([subcategory, subItems]) => {
                   const subKey = `sub:${category}>${subcategory}`;
                   const subExpanded = expanded.has(subKey);
+                  const sortedItems = sortItems(subItems, sortBy);
                   return (
                     <div className="fridge-subcategory" key={subcategory}>
                       <div className="fridge-subcategory-header" onClick={() => toggle(subKey)}>
@@ -71,15 +107,19 @@ export default function FridgePage({ onBack }: { onBack: () => void }) {
                       </div>
                       {subExpanded && (
                         <ul className="fridge-item-list">
-                          {subItems.map((item) => {
+                          {sortedItems.map((item) => {
                             const itemKey = `item:${item.id}`;
                             const itemExpanded = expanded.has(itemKey);
+                            const expiry = formatExpiry(item.expiresAt);
                             return (
                               <li key={item.id}>
                                 <div className="fridge-item-row" onClick={() => toggle(itemKey)}>
                                   <span>{item.name}</span>
-                                  <span>
-                                    {item.quantity} {item.unit}
+                                  <span className="fridge-item-meta">
+                                    <span className={`fridge-expiry ${expiry.urgency}`}>{expiry.label}</span>
+                                    <span>
+                                      {item.quantity} {item.unit}
+                                    </span>
                                     <span className={`chevron ${itemExpanded ? "expanded" : ""}`}>▸</span>
                                   </span>
                                 </div>

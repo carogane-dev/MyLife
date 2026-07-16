@@ -7,6 +7,7 @@ import ChoiceCards from "./ChoiceCards.js";
 const SEX_OPTIONS = [
   { value: "homme", label: "Homme" },
   { value: "femme", label: "Femme" },
+  { value: "autre", label: "Autre" },
 ];
 
 const ACTIVITY_OPTIONS = [

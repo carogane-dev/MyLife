@@ -4,7 +4,7 @@ import { requireAuth } from "../middleware/requireAuth.js";
 import { fetchOffProduct, OffLookupError } from "../offClient.js";
 import { deriveCategory } from "../categoryMapping.js";
 import { resolveNutrition } from "../nutritionDefaults.js";
-import { isFiniteNumber, isNonEmptyString } from "../validation.js";
+import { isFiniteNumber, isNonEmptyString, isValidDateString } from "../validation.js";
 
 export const fridgeRouter = Router();
 
@@ -52,6 +52,9 @@ fridgeRouter.get("/lookup/:barcode", requireAuth, async (req, res) => {
       subcategory,
       quantity: product.quantityGrams ?? 1,
       unit: product.quantityGrams !== null ? "g" : "pièce",
+      // Jamais fournie par Open Food Facts (dépend du lot physique) :
+      // l'utilisateur doit la renseigner lui-même avant de pouvoir valider.
+      expiresAt: null,
       ...nutrition,
     },
   });
@@ -67,12 +70,13 @@ fridgeRouter.post("/", requireAuth, async (req, res) => {
     !isNonEmptyString(body.unit) ||
     !isNonEmptyString(body.category) ||
     !isNonEmptyString(body.subcategory) ||
+    !isValidDateString(body.expiresAt) ||
     !isFiniteNumber(body.caloriesPer100g) ||
     !isFiniteNumber(body.proteinPer100g) ||
     !isFiniteNumber(body.fatPer100g) ||
     !isFiniteNumber(body.carbsPer100g)
   ) {
-    res.status(400).json({ error: "Nom, quantité et unité requis." });
+    res.status(400).json({ error: "Nom, quantité, unité et date de péremption requis." });
     return;
   }
 
@@ -82,6 +86,7 @@ fridgeRouter.post("/", requireAuth, async (req, res) => {
       name: body.name.trim(),
       category: body.category,
       subcategory: body.subcategory,
+      expiresAt: new Date(body.expiresAt),
       quantity: body.quantity,
       unit: body.unit,
       barcode: isNonEmptyString(body.barcode) ? body.barcode : null,
