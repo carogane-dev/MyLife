@@ -913,3 +913,190 @@ body {
   color: var(--color-primary-dark);
   font-size: 0.85rem;
 }
+
+/* Progression calorique / macros (style gaming) */
+
+.daily-progress {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.daily-progress h3 {
+  margin: 0 0 0.85rem;
+  font-size: 1rem;
+}
+
+.progress-bar-row + .progress-bar-row {
+  margin-top: 0.65rem;
+}
+
+.progress-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.progress-bar-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--color-primary), var(--color-primary-dark));
+  transition: width 0.3s ease;
+}
+
+.progress-bar-fill.over {
+  background: linear-gradient(to right, #c9820c, var(--color-danger));
+}
+
+.home-progress {
+  margin-bottom: 1.5rem;
+}
+
+.daily-progress.compact {
+  margin: 0;
+  padding: 0.85rem 1rem;
+}
+
+.daily-progress.compact h3 {
+  display: none;
+}
+
+/* Statistiques (tableau de bord) */
+
+.dashboard-page h2 {
+  margin: 0 0 1rem;
+}
+
+.consumption-log {
+  margin-top: 1.5rem;
+}
+
+.consumption-log h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.consumption-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+.consumption-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.consumption-list li span:first-child {
+  color: var(--color-text);
+}
+
+.week-chart {
+  margin-top: 1.5rem;
+}
+
+.week-chart h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.week-chart-bars {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 0.5rem;
+  height: 120px;
+}
+
+.week-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1;
+  height: 100%;
+  gap: 0.4rem;
+}
+
+.week-bar-track {
+  width: 100%;
+  max-width: 28px;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.week-bar-fill {
+  width: 100%;
+  background: linear-gradient(to top, var(--color-primary-dark), var(--color-primary));
+  border-radius: 999px;
+  transition: height 0.3s ease;
+}
+
+.week-bar-label {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  text-transform: capitalize;
+}
+
+/* Action "manger" sur un article du frigo */
+
+.fridge-item-action-button.eat {
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+}
+
+.fridge-item-action-button.confirm.eat {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
+}
+
+.fridge-eat-form {
+  margin-top: 0.6rem;
+  cursor: default;
+}
+
+.fridge-eat-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.fridge-eat-form input {
+  font-family: inherit;
+  font-size: 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.6rem;
+  color: var(--color-text);
+  max-width: 140px;
+}
+
+.fridge-eat-form input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}

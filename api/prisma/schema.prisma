@@ -11,14 +11,15 @@ datasource db {
 }
 
 model User {
-  id               String            @id @default(uuid())
-  email            String            @unique
-  passwordHash     String
-  createdAt        DateTime          @default(now())
-  meals            MealEntry[]
-  sessions         Session[]
-  fridgeItems      FridgeItem[]
-  nutritionProfile NutritionProfile?
+  id                 String              @id @default(uuid())
+  email              String              @unique
+  passwordHash       String
+  createdAt          DateTime            @default(now())
+  meals              MealEntry[]
+  sessions           Session[]
+  fridgeItems        FridgeItem[]
+  nutritionProfile   NutritionProfile?
+  consumptionEntries ConsumptionEntry[]
 }
 
 // Profil physiologique nécessaire au calcul futur des besoins caloriques
@@ -78,6 +79,32 @@ model FridgeItem {
   updatedAt DateTime @updatedAt
 
   @@index([userId, category, subcategory])
+}
+
+// Journal de consommation : "marquer comme mangé" un article du frigo.
+// Distinct de MealEntry (photo + IA), qui reste dédié à la reconnaissance
+// de plats à venir — ici, les macros sont connues précisément (issues du
+// FridgeItem au moment de la consommation) et servent au tableau de bord
+// calorique journalier/hebdomadaire.
+model ConsumptionEntry {
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  // Pas de relation Prisma vers FridgeItem : l'article peut être
+  // entièrement consommé (et donc supprimé) sans perdre l'historique.
+  fridgeItemId String?
+  name         String
+  quantity     Float
+  unit         String
+  calories     Float
+  protein      Float
+  fat          Float
+  carbs        Float
+
+  consumedAt DateTime @default(now())
+
+  @@index([userId, consumedAt])
 }
 
 model MealEntry {
