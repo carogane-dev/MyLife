@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { getFridgeItems } from "./api.js";
+import { deleteFridgeItem, getFridgeItems } from "./api.js";
 import type { FridgeItem } from "./api.js";
+import FridgeItemFormPage from "./FridgeItemFormPage.js";
 
 type GroupedItems = Record<string, Record<string, FridgeItem[]>>;
 type SortBy = "expiration" | "weight" | "name";
@@ -35,17 +36,25 @@ function formatExpiry(expiresAt: string): { label: string; urgency: "expired" | 
   return { label: date, urgency: "" };
 }
 
+type Mode = "list" | "add" | "edit";
+
 export default function FridgePage({ onBack }: { onBack: () => void }) {
   const [items, setItems] = useState<FridgeItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<SortBy>("expiration");
+  const [mode, setMode] = useState<Mode>("list");
+  const [editingItem, setEditingItem] = useState<FridgeItem | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  useEffect(() => {
+  function reload() {
     getFridgeItems()
       .then(setItems)
       .catch((err) => setError(err instanceof Error ? err.message : "Une erreur est survenue."));
-  }, []);
+  }
+
+  useEffect(reload, []);
 
   const grouped = useMemo(() => groupItems(items ?? []), [items]);
 
@@ -58,12 +67,56 @@ export default function FridgePage({ onBack }: { onBack: () => void }) {
     });
   }
 
+  function handleSaved() {
+    setMode("list");
+    setEditingItem(null);
+    reload();
+  }
+
+  async function handleDelete(id: string) {
+    setDeleteError(null);
+    try {
+      await deleteFridgeItem(id);
+      setConfirmDeleteId(null);
+      reload();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Une erreur est survenue.");
+    }
+  }
+
+  if (mode === "add") {
+    return (
+      <div className="fridge-page">
+        <button className="page-back" onClick={() => setMode("list")}>
+          ← Retour
+        </button>
+        <FridgeItemFormPage item={null} onSaved={handleSaved} onCancel={() => setMode("list")} />
+      </div>
+    );
+  }
+
+  if (mode === "edit" && editingItem) {
+    return (
+      <div className="fridge-page">
+        <button className="page-back" onClick={() => setMode("list")}>
+          ← Retour
+        </button>
+        <FridgeItemFormPage item={editingItem} onSaved={handleSaved} onCancel={() => setMode("list")} />
+      </div>
+    );
+  }
+
   return (
     <div className="fridge-page">
       <button className="page-back" onClick={onBack}>
         ← Retour
       </button>
-      <h2>🧊 Frigo</h2>
+      <div className="fridge-toolbar">
+        <h2>🧊 Frigo</h2>
+        <button className="fridge-add-button" onClick={() => setMode("add")}>
+          + Ajouter un aliment
+        </button>
+      </div>
 
       {items !== null && items.length > 0 && (
         <div className="fridge-sort-control">
@@ -78,6 +131,7 @@ export default function FridgePage({ onBack }: { onBack: () => void }) {
         </div>
       )}
 
+      {deleteError && <p className="fridge-error">{deleteError}</p>}
       {items === null && !error && <p>Chargement…</p>}
       {error && <p className="fridge-error">{error}</p>}
       {items !== null && items.length === 0 && (
@@ -135,6 +189,40 @@ export default function FridgePage({ onBack }: { onBack: () => void }) {
                                     {item.nutritionEstimated && (
                                       <span className="fridge-item-estimated-badge">Estimé</span>
                                     )}
+                                    <div className="fridge-item-actions" onClick={(e) => e.stopPropagation()}>
+                                      <button
+                                        className="fridge-item-action-button"
+                                        onClick={() => {
+                                          setEditingItem(item);
+                                          setMode("edit");
+                                        }}
+                                      >
+                                        ✏️ Modifier
+                                      </button>
+                                      {confirmDeleteId === item.id ? (
+                                        <>
+                                          <button
+                                            className="fridge-item-action-button confirm"
+                                            onClick={() => handleDelete(item.id)}
+                                          >
+                                            Confirmer la suppression
+                                          </button>
+                                          <button
+                                            className="fridge-item-action-button"
+                                            onClick={() => setConfirmDeleteId(null)}
+                                          >
+                                            Annuler
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <button
+                                          className="fridge-item-action-button danger"
+                                          onClick={() => setConfirmDeleteId(item.id)}
+                                        >
+                                          🗑️ Supprimer
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
                                 )}
                               </li>
