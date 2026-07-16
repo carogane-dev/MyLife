@@ -2,12 +2,20 @@ import { useEffect, useState } from "react";
 import { checkHealth, getMe, signOut } from "./api.js";
 import type { User } from "./api.js";
 import AuthPage from "./AuthPage.js";
+import FridgePage from "./FridgePage.js";
 import "./App.css";
 
 type ConnectionState = "checking" | "connected" | "error";
 type AuthState = "loading" | "authenticated" | "unauthenticated";
+type Page = "home" | "fridge";
 
-const FEATURES = [
+const FEATURES: { icon: string; title: string; description: string; page?: Page }[] = [
+  {
+    icon: "🧊",
+    title: "Frigo",
+    description: "Parcours ce qu'il y a dans ton frigo.",
+    page: "fridge",
+  },
   {
     icon: "📷",
     title: "Ajouter un repas",
@@ -29,6 +37,7 @@ export default function App() {
   const [state, setState] = useState<ConnectionState>("checking");
   const [authState, setAuthState] = useState<AuthState>("loading");
   const [user, setUser] = useState<User | null>(null);
+  const [page, setPage] = useState<Page>("home");
 
   useEffect(() => {
     checkHealth()
@@ -83,7 +92,11 @@ export default function App() {
         />
       )}
 
-      {authState === "authenticated" && (
+      {authState === "authenticated" && page === "fridge" && (
+        <FridgePage onBack={() => setPage("home")} />
+      )}
+
+      {authState === "authenticated" && page === "home" && (
         <>
           <section className="hero">
             <h2>Bienvenue 👋</h2>
@@ -92,11 +105,15 @@ export default function App() {
 
           <section className="feature-grid">
             {FEATURES.map((feature) => (
-              <article className="feature-card" key={feature.title}>
+              <article
+                className={`feature-card ${feature.page ? "clickable" : ""}`}
+                key={feature.title}
+                onClick={feature.page ? () => setPage(feature.page!) : undefined}
+              >
                 <span className="icon">{feature.icon}</span>
                 <h3>{feature.title}</h3>
                 <p>{feature.description}</p>
-                <span className="soon">Bientôt disponible</span>
+                {!feature.page && <span className="soon">Bientôt disponible</span>}
               </article>
             ))}
           </section>

@@ -7,6 +7,17 @@ export interface User {
   createdAt: string;
 }
 
+export interface FridgeItem {
+  id: string;
+  category: string;
+  subcategory: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 async function parseJsonOrThrow(res: Response) {
   if (!res.ok) {
     let message = "Une erreur est survenue.";
@@ -64,4 +75,13 @@ export async function getMe(): Promise<User | null> {
   if (res.status === 401) return null;
   const body = await parseJsonOrThrow(res);
   return body.user;
+}
+
+export async function getFridgeItems(): Promise<FridgeItem[]> {
+  const res = await fetch(`${API_BASE_URL}/api/fridge`, {
+    method: "GET",
+    credentials: "include",
+  });
+  const body = await parseJsonOrThrow(res);
+  return body.items;
 }

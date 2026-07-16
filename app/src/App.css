@@ -147,6 +147,120 @@ body {
   color: var(--color-text-muted);
 }
 
+.feature-card.clickable {
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.1s;
+}
+
+.feature-card.clickable:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-2px);
+}
+
+.feature-card.clickable:hover h3 {
+  color: var(--color-primary-dark);
+}
+
+.page-back {
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 1rem;
+}
+
+.page-back:hover {
+  color: var(--color-primary-dark);
+}
+
+.fridge-page h2 {
+  margin: 0 0 1rem;
+}
+
+.fridge-error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: 0.85rem;
+}
+
+.fridge-empty {
+  color: var(--color-text-muted);
+}
+
+.fridge-category {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+}
+
+.fridge-category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.fridge-category-header .chevron {
+  color: var(--color-text-muted);
+  transition: transform 0.15s;
+}
+
+.fridge-category-header .chevron.expanded {
+  transform: rotate(90deg);
+}
+
+.fridge-subcategory-list {
+  padding: 0 1rem 0.5rem 1.25rem;
+}
+
+.fridge-subcategory {
+  border-top: 1px solid var(--color-border);
+}
+
+.fridge-subcategory-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.fridge-subcategory-header .chevron {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  transition: transform 0.15s;
+}
+
+.fridge-subcategory-header .chevron.expanded {
+  transform: rotate(90deg);
+}
+
+.fridge-item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0.5rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+.fridge-item-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.3rem 0;
+  color: var(--color-text-muted);
+}
+
+.fridge-item-row span:first-child {
+  color: var(--color-text);
+}
+
 .auth-page {
   display: flex;
   justify-content: center;
