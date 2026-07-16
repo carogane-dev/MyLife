@@ -41,8 +41,8 @@ fridgeRouter.get("/lookup/:barcode", requireAuth, async (req, res) => {
     return;
   }
 
-  const { category, subcategory } = deriveCategory(product);
-  const nutrition = resolveNutrition(product.nutriments, category);
+  const { category, subcategory, nutritionBucket } = deriveCategory(product);
+  const nutrition = resolveNutrition(product.nutriments, nutritionBucket);
 
   res.status(200).json({
     item: {
