@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../db.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { isFiniteNumber, isNonEmptyString, isValidDateString } from "../validation.js";
+import { quantityToGrams } from "../unitConversion.js";
 
 export const consumptionRouter = Router();
 
@@ -25,9 +26,11 @@ consumptionRouter.post("/", requireAuth, async (req, res) => {
     return;
   }
 
-  // Les macros sont toujours renseignées "pour 100g" (voir FridgeItem) :
-  // on applique le même ratio quelle que soit l'unité affichée.
-  const ratio = body.quantity / 100;
+  // Les macros sont toujours renseignées "pour 100g" (voir FridgeItem) : on
+  // convertit d'abord la quantité consommée (dans l'unité de l'article,
+  // ex. "pièce") en grammes avant d'appliquer le ratio.
+  const gramsConsumed = quantityToGrams(body.quantity, item.unit, item.unitWeightGrams);
+  const ratio = gramsConsumed / 100;
   const entry = await prisma.consumptionEntry.create({
     data: {
       userId: req.user!.id,

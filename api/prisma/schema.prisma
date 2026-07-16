@@ -61,6 +61,14 @@ model FridgeItem {
   unit        String // ex. "pièce", "g", "kg", "L"
   barcode     String?
 
+  // Poids en grammes d'une unité, utilisé pour convertir `quantity` en
+  // grammes lors du calcul des macros (toujours exprimées "pour 100g").
+  // Sans objet quand `unit` est déjà "g"/"kg"/"L" (conversion standard) ;
+  // pertinent uniquement pour "pièce" ou une unité libre similaire, où
+  // `quantity` est un nombre d'exemplaires et non un poids. Repli à 100g
+  // si non renseigné (cohérent avec les valeurs de repli de nutritionDefaults.ts).
+  unitWeightGrams Float?
+
   // Toujours fournie explicitement par l'app (validation POST /api/fridge) ;
   // le défaut n'existe que pour permettre la migration sur les lignes
   // déjà existantes. Jamais issue du code-barres (OFF ne connaît pas la

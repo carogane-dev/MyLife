@@ -19,6 +19,7 @@ export interface FridgeItem {
   quantity: number;
   unit: string;
   barcode: string | null;
+  unitWeightGrams: number | null;
   expiresAt: string;
   caloriesPer100g: number;
   proteinPer100g: number;
@@ -74,6 +75,7 @@ export interface FridgeItemDraft {
   subcategory: string;
   quantity: number;
   unit: string;
+  unitWeightGrams: number | null;
   expiresAt: string | null;
   caloriesPer100g: number;
   proteinPer100g: number;
