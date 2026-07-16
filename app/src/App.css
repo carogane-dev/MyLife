@@ -255,10 +255,55 @@ body {
   justify-content: space-between;
   padding: 0.3rem 0;
   color: var(--color-text-muted);
+  cursor: pointer;
 }
 
 .fridge-item-row span:first-child {
   color: var(--color-text);
+}
+
+.fridge-item-row .chevron {
+  margin-left: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  display: inline-block;
+  transition: transform 0.15s;
+}
+
+.fridge-item-row .chevron.expanded {
+  transform: rotate(90deg);
+}
+
+.fridge-item-detail {
+  padding: 0.5rem 0 0.5rem 0.5rem;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.fridge-item-nutrition {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.fridge-item-nutrition-note {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.7rem;
+}
+
+.fridge-item-estimated-badge {
+  display: inline-block;
+  margin-top: 0.4rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .auth-page {
@@ -355,4 +400,56 @@ body {
 .auth-submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.scan-page h2 {
+  margin: 0 0 0.5rem;
+}
+
+.scan-session-count {
+  margin: 0 0 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.scan-viewport {
+  max-width: 360px;
+  margin: 0 auto 1rem;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #000;
+}
+
+.scan-status {
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.scan-confirm-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+.scan-confirm-card h3 {
+  margin: 0 0 0.25rem;
+}
+
+.scan-nutrition-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1rem 0 0.25rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.scan-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
 }

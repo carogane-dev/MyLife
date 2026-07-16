@@ -37,8 +37,18 @@ model FridgeItem {
   name        String // ex. "Crottin de Chavignol"
   quantity    Float
   unit        String // ex. "pièce", "g", "kg", "L"
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  barcode     String?
+
+  // Toujours renseignées : valeur réelle du code-barres si disponible,
+  // sinon valeur type de la catégorie (voir nutritionDefaults.ts).
+  caloriesPer100g    Float   @default(0)
+  proteinPer100g     Float   @default(0)
+  fatPer100g         Float   @default(0)
+  carbsPer100g       Float   @default(0)
+  nutritionEstimated Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId, category, subcategory])
 }

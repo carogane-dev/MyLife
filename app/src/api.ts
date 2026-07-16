@@ -14,8 +14,28 @@ export interface FridgeItem {
   name: string;
   quantity: number;
   unit: string;
+  barcode: string | null;
+  caloriesPer100g: number;
+  proteinPer100g: number;
+  fatPer100g: number;
+  carbsPer100g: number;
+  nutritionEstimated: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface FridgeItemDraft {
+  barcode: string;
+  name: string;
+  category: string;
+  subcategory: string;
+  quantity: number;
+  unit: string;
+  caloriesPer100g: number;
+  proteinPer100g: number;
+  fatPer100g: number;
+  carbsPer100g: number;
+  nutritionEstimated: boolean;
 }
 
 async function parseJsonOrThrow(res: Response) {
@@ -84,4 +104,24 @@ export async function getFridgeItems(): Promise<FridgeItem[]> {
   });
   const body = await parseJsonOrThrow(res);
   return body.items;
+}
+
+export async function lookupBarcode(barcode: string): Promise<FridgeItemDraft> {
+  const res = await fetch(`${API_BASE_URL}/api/fridge/lookup/${encodeURIComponent(barcode)}`, {
+    method: "GET",
+    credentials: "include",
+  });
+  const body = await parseJsonOrThrow(res);
+  return body.item;
+}
+
+export async function createFridgeItem(draft: FridgeItemDraft): Promise<FridgeItem> {
+  const res = await fetch(`${API_BASE_URL}/api/fridge`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(draft),
+  });
+  const body = await parseJsonOrThrow(res);
+  return body.item;
 }
