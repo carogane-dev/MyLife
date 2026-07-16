@@ -26,6 +26,25 @@ export interface FridgeItem {
   updatedAt: string;
 }
 
+export interface NutritionProfile {
+  id: string;
+  sex: "homme" | "femme";
+  age: number;
+  heightCm: number;
+  weightKg: number;
+  activityLevel: "sedentaire" | "leger" | "modere" | "actif" | "tres_actif";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NutritionProfileDraft {
+  sex: "homme" | "femme";
+  age: number;
+  heightCm: number;
+  weightKg: number;
+  activityLevel: "sedentaire" | "leger" | "modere" | "actif" | "tres_actif";
+}
+
 export interface FridgeItemDraft {
   barcode: string;
   name: string;
@@ -126,4 +145,24 @@ export async function createFridgeItem(draft: FridgeItemDraft): Promise<FridgeIt
   });
   const body = await parseJsonOrThrow(res);
   return body.item;
+}
+
+export async function getProfile(): Promise<NutritionProfile | null> {
+  const res = await fetch(`${API_BASE_URL}/api/profile`, {
+    method: "GET",
+    credentials: "include",
+  });
+  const body = await parseJsonOrThrow(res);
+  return body.profile;
+}
+
+export async function saveProfile(draft: NutritionProfileDraft): Promise<NutritionProfile> {
+  const res = await fetch(`${API_BASE_URL}/api/profile`, {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(draft),
+  });
+  const body = await parseJsonOrThrow(res);
+  return body.profile;
 }
