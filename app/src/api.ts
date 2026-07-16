@@ -1,3 +1,5 @@
+import type { NutritionTargets } from "./nutritionCalculator.js";
+
 // Chemin relatif : passe par le proxy Vite (voir vite.config.ts) qui redirige
 // /api vers le back-end. Fonctionne pareil en local, sur le réseau local
 // (IP du PC) ou via un tunnel HTTPS, sans jamais coder une adresse en dur.
@@ -27,6 +29,8 @@ export interface FridgeItem {
   updatedAt: string;
 }
 
+export type { NutritionTargets } from "./nutritionCalculator.js";
+
 export interface NutritionProfile {
   id: string;
   sex: "homme" | "femme" | "autre";
@@ -34,6 +38,7 @@ export interface NutritionProfile {
   heightCm: number;
   weightKg: number;
   activityLevel: "sedentaire" | "leger" | "modere" | "actif" | "tres_actif";
+  goalMode: "precision" | "ligne" | "frigo_only";
   createdAt: string;
   updatedAt: string;
 }
@@ -44,6 +49,7 @@ export interface NutritionProfileDraft {
   heightCm: number;
   weightKg: number;
   activityLevel: "sedentaire" | "leger" | "modere" | "actif" | "tres_actif";
+  goalMode: "precision" | "ligne" | "frigo_only";
 }
 
 export interface FridgeItemDraft {
@@ -149,13 +155,12 @@ export async function createFridgeItem(draft: FridgeItemDraft): Promise<FridgeIt
   return body.item;
 }
 
-export async function getProfile(): Promise<NutritionProfile | null> {
+export async function getProfile(): Promise<{ profile: NutritionProfile | null; targets: NutritionTargets | null }> {
   const res = await fetch(`${API_BASE_URL}/api/profile`, {
     method: "GET",
     credentials: "include",
   });
-  const body = await parseJsonOrThrow(res);
-  return body.profile;
+  return parseJsonOrThrow(res);
 }
 
 export async function saveProfile(draft: NutritionProfileDraft): Promise<NutritionProfile> {

@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { getProfile, saveProfile } from "./api.js";
-import type { NutritionProfileDraft } from "./api.js";
+import type { NutritionProfileDraft, NutritionTargets } from "./api.js";
 import SliderInput from "./SliderInput.js";
 import ChoiceCards from "./ChoiceCards.js";
+import NutritionTargetsSummary, { GOAL_MODE_OPTIONS } from "./NutritionTargetsSummary.js";
+import { calculateNutritionTargets } from "./nutritionCalculator.js";
 
 const SEX_OPTIONS = [
   { value: "homme", label: "Homme" },
@@ -20,6 +22,7 @@ const ACTIVITY_OPTIONS = [
 
 export default function SettingsPage({ onBack }: { onBack: () => void }) {
   const [draft, setDraft] = useState<NutritionProfileDraft | null>(null);
+  const [targets, setTargets] = useState<NutritionTargets | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +30,7 @@ export default function SettingsPage({ onBack }: { onBack: () => void }) {
 
   useEffect(() => {
     getProfile()
-      .then((profile) => {
+      .then(({ profile, targets }) => {
         if (profile) {
           setDraft({
             sex: profile.sex,
@@ -35,7 +38,9 @@ export default function SettingsPage({ onBack }: { onBack: () => void }) {
             heightCm: profile.heightCm,
             weightKg: profile.weightKg,
             activityLevel: profile.activityLevel,
+            goalMode: profile.goalMode,
           });
+          setTargets(targets);
         }
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Une erreur est survenue."))
@@ -43,7 +48,12 @@ export default function SettingsPage({ onBack }: { onBack: () => void }) {
   }, []);
 
   function update(patch: Partial<NutritionProfileDraft>) {
-    setDraft((d) => (d ? { ...d, ...patch } : d));
+    setDraft((d) => {
+      if (!d) return d;
+      const next = { ...d, ...patch };
+      setTargets(calculateNutritionTargets(next));
+      return next;
+    });
     setSaved(false);
   }
 
@@ -91,6 +101,18 @@ export default function SettingsPage({ onBack }: { onBack: () => void }) {
               stacked
             />
           </div>
+
+          <div>
+            <h3>Objectif</h3>
+            <ChoiceCards
+              options={GOAL_MODE_OPTIONS}
+              value={draft.goalMode}
+              onChange={(v) => update({ goalMode: v as NutritionProfileDraft["goalMode"] })}
+              stacked
+            />
+          </div>
+
+          <NutritionTargetsSummary goalMode={draft.goalMode} targets={targets} activityLevel={draft.activityLevel} />
 
           {saved && <p className="settings-saved-note">Profil mis à jour ✅</p>}
 

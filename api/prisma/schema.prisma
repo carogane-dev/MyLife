@@ -34,6 +34,7 @@ model NutritionProfile {
   heightCm      Float
   weightKg      Float
   activityLevel String // "sedentaire" | "leger" | "modere" | "actif" | "tres_actif"
+  goalMode      String @default("ligne") // "precision" | "ligne" | "frigo_only"
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

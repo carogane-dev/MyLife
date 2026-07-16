@@ -3,6 +3,8 @@ import { saveProfile } from "./api.js";
 import type { NutritionProfile, NutritionProfileDraft } from "./api.js";
 import SliderInput from "./SliderInput.js";
 import ChoiceCards from "./ChoiceCards.js";
+import NutritionTargetsSummary, { GOAL_MODE_OPTIONS } from "./NutritionTargetsSummary.js";
+import { calculateNutritionTargets } from "./nutritionCalculator.js";
 
 const SEX_OPTIONS = [
   { value: "homme", label: "Homme" },
@@ -18,7 +20,7 @@ const ACTIVITY_OPTIONS = [
   { value: "tres_actif", label: "Très actif", description: "Exercice très intense ou travail physique" },
 ];
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 export default function OnboardingPage({ onComplete }: { onComplete: (profile: NutritionProfile) => void }) {
   const [step, setStep] = useState(1);
@@ -28,6 +30,7 @@ export default function OnboardingPage({ onComplete }: { onComplete: (profile: N
     heightCm: 170,
     weightKg: 70,
     activityLevel: "modere",
+    goalMode: "ligne",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,11 +105,24 @@ export default function OnboardingPage({ onComplete }: { onComplete: (profile: N
 
         {step === 6 && (
           <div className="wizard-step">
+            <h3>Ton objectif</h3>
+            <p className="wizard-hint">Choisis ton niveau de difficulté — tu pourras le changer plus tard.</p>
+            <ChoiceCards
+              options={GOAL_MODE_OPTIONS}
+              value={draft.goalMode}
+              onChange={(v) => update({ goalMode: v as NutritionProfileDraft["goalMode"] })}
+              stacked
+            />
+          </div>
+        )}
+
+        {step === 7 && (
+          <div className="wizard-step">
             <h3>Vérifie tes infos</h3>
             <ul className="wizard-summary">
               <li onClick={() => setStep(1)}>
                 <span>Sexe</span>
-                <span>{draft.sex === "homme" ? "Homme" : "Femme"}</span>
+                <span>{SEX_OPTIONS.find((o) => o.value === draft.sex)?.label}</span>
               </li>
               <li onClick={() => setStep(2)}>
                 <span>Âge</span>
@@ -124,10 +140,21 @@ export default function OnboardingPage({ onComplete }: { onComplete: (profile: N
                 <span>Activité</span>
                 <span>{ACTIVITY_OPTIONS.find((o) => o.value === draft.activityLevel)?.label}</span>
               </li>
+              <li onClick={() => setStep(6)}>
+                <span>Objectif</span>
+                <span>{GOAL_MODE_OPTIONS.find((o) => o.value === draft.goalMode)?.label}</span>
+              </li>
             </ul>
+
+            <NutritionTargetsSummary
+              goalMode={draft.goalMode}
+              targets={calculateNutritionTargets(draft)}
+              activityLevel={draft.activityLevel}
+            />
+
             {error && <p className="auth-error">{error}</p>}
             <div className="wizard-nav">
-              <button className="page-back" onClick={() => setStep(5)} disabled={saving}>
+              <button className="page-back" onClick={() => setStep(6)} disabled={saving}>
                 ← Retour
               </button>
               <button className="auth-submit" onClick={handleConfirm} disabled={saving}>
@@ -137,7 +164,7 @@ export default function OnboardingPage({ onComplete }: { onComplete: (profile: N
           </div>
         )}
 
-        {step < 6 && (
+        {step < 7 && (
           <div className="wizard-nav">
             <button className="page-back" onClick={() => setStep((s) => s - 1)} disabled={step === 1}>
               ← Retour
