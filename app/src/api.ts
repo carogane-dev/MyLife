@@ -55,7 +55,7 @@ export interface NutritionProfileDraft {
 }
 
 export interface FridgeItemDraft {
-  barcode: string;
+  barcode?: string | null;
   name: string;
   category: string;
   subcategory: string;
@@ -155,6 +155,25 @@ export async function createFridgeItem(draft: FridgeItemDraft): Promise<FridgeIt
   });
   const body = await parseJsonOrThrow(res);
   return body.item;
+}
+
+export async function updateFridgeItem(id: string, draft: FridgeItemDraft): Promise<FridgeItem> {
+  const res = await fetch(`${API_BASE_URL}/api/fridge/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(draft),
+  });
+  const body = await parseJsonOrThrow(res);
+  return body.item;
+}
+
+export async function deleteFridgeItem(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/fridge/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  await parseJsonOrThrow(res);
 }
 
 export async function getProfile(): Promise<{ profile: NutritionProfile | null; targets: NutritionTargets | null }> {

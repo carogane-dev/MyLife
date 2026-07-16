@@ -10,6 +10,22 @@ export const fridgeRouter = Router();
 
 const BARCODE_RE = /^\d{8,14}$/;
 
+function isValidFridgeItemBody(body: Record<string, unknown>): boolean {
+  return (
+    isNonEmptyString(body.name) &&
+    isFiniteNumber(body.quantity) &&
+    (body.quantity as number) > 0 &&
+    isNonEmptyString(body.unit) &&
+    isNonEmptyString(body.category) &&
+    isNonEmptyString(body.subcategory) &&
+    isValidDateString(body.expiresAt) &&
+    isFiniteNumber(body.caloriesPer100g) &&
+    isFiniteNumber(body.proteinPer100g) &&
+    isFiniteNumber(body.fatPer100g) &&
+    isFiniteNumber(body.carbsPer100g)
+  );
+}
+
 fridgeRouter.get("/", requireAuth, async (req, res) => {
   const items = await prisma.fridgeItem.findMany({
     where: { userId: req.user!.id },
@@ -63,19 +79,7 @@ fridgeRouter.get("/lookup/:barcode", requireAuth, async (req, res) => {
 fridgeRouter.post("/", requireAuth, async (req, res) => {
   const body = req.body ?? {};
 
-  if (
-    !isNonEmptyString(body.name) ||
-    !isFiniteNumber(body.quantity) ||
-    body.quantity <= 0 ||
-    !isNonEmptyString(body.unit) ||
-    !isNonEmptyString(body.category) ||
-    !isNonEmptyString(body.subcategory) ||
-    !isValidDateString(body.expiresAt) ||
-    !isFiniteNumber(body.caloriesPer100g) ||
-    !isFiniteNumber(body.proteinPer100g) ||
-    !isFiniteNumber(body.fatPer100g) ||
-    !isFiniteNumber(body.carbsPer100g)
-  ) {
+  if (!isValidFridgeItemBody(body)) {
     res.status(400).json({ error: "Nom, quantité, unité et date de péremption requis." });
     return;
   }
@@ -99,4 +103,54 @@ fridgeRouter.post("/", requireAuth, async (req, res) => {
   });
 
   res.status(201).json({ item });
+});
+
+fridgeRouter.put("/:id", requireAuth, async (req, res) => {
+  const body = req.body ?? {};
+
+  if (!isValidFridgeItemBody(body)) {
+    res.status(400).json({ error: "Nom, quantité, unité et date de péremption requis." });
+    return;
+  }
+
+  const existing = await prisma.fridgeItem.findFirst({
+    where: { id: req.params.id, userId: req.user!.id },
+  });
+  if (!existing) {
+    res.status(404).json({ error: "Article introuvable." });
+    return;
+  }
+
+  const item = await prisma.fridgeItem.update({
+    where: { id: existing.id },
+    data: {
+      name: body.name.trim(),
+      category: body.category,
+      subcategory: body.subcategory,
+      expiresAt: new Date(body.expiresAt),
+      quantity: body.quantity,
+      unit: body.unit,
+      barcode: isNonEmptyString(body.barcode) ? body.barcode : null,
+      caloriesPer100g: body.caloriesPer100g,
+      proteinPer100g: body.proteinPer100g,
+      fatPer100g: body.fatPer100g,
+      carbsPer100g: body.carbsPer100g,
+      nutritionEstimated: body.nutritionEstimated === true,
+    },
+  });
+
+  res.status(200).json({ item });
+});
+
+fridgeRouter.delete("/:id", requireAuth, async (req, res) => {
+  const existing = await prisma.fridgeItem.findFirst({
+    where: { id: req.params.id, userId: req.user!.id },
+  });
+  if (!existing) {
+    res.status(404).json({ error: "Article introuvable." });
+    return;
+  }
+
+  await prisma.fridgeItem.delete({ where: { id: existing.id } });
+  res.status(204).end();
 });
