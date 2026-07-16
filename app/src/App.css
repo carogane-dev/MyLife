@@ -1162,3 +1162,54 @@ body {
   color: var(--color-primary-dark);
   font-size: 1rem;
 }
+
+.meals-remaining-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  padding: 0.6rem 0.9rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.meals-remaining-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.meals-remaining-stepper strong {
+  font-size: 1.1rem;
+  color: var(--color-text);
+  min-width: 1.2rem;
+  text-align: center;
+}
+
+.meals-remaining-stepper button {
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 1rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.meals-remaining-stepper button:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+}
+
+.meals-remaining-stepper button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

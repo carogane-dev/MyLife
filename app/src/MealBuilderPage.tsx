@@ -9,12 +9,13 @@ export default function MealBuilderPage({ onBack }: { onBack: () => void }) {
   const [eating, setEating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [eaten, setEaten] = useState(false);
+  const [mealsRemaining, setMealsRemaining] = useState(3);
 
-  function load(excludeIds: string[] = []) {
+  function load(excludeIds: string[] = [], meals = mealsRemaining) {
     setLoading(true);
     setError(null);
     setEaten(false);
-    getMealSuggestion(excludeIds)
+    getMealSuggestion(excludeIds, meals)
       .then(({ suggestion, reason }) => {
         setSuggestion(suggestion);
         setReason(reason ?? null);
@@ -24,6 +25,12 @@ export default function MealBuilderPage({ onBack }: { onBack: () => void }) {
   }
 
   useEffect(() => load(), []);
+
+  function changeMealsRemaining(value: number) {
+    const clamped = Math.min(6, Math.max(1, value));
+    setMealsRemaining(clamped);
+    load([], clamped);
+  }
 
   async function handleEat() {
     if (!suggestion) return;
@@ -53,6 +60,19 @@ export default function MealBuilderPage({ onBack }: { onBack: () => void }) {
       </button>
       <h2>🍳 Composer un repas</h2>
       <p className="wizard-hint">Une suggestion basée sur ton frigo et ce qu'il te reste à atteindre aujourd'hui.</p>
+
+      <div className="meals-remaining-control">
+        <span>Repas restants aujourd'hui (dont celui-ci) :</span>
+        <div className="meals-remaining-stepper">
+          <button onClick={() => changeMealsRemaining(mealsRemaining - 1)} disabled={mealsRemaining <= 1 || loading}>
+            −
+          </button>
+          <strong>{mealsRemaining}</strong>
+          <button onClick={() => changeMealsRemaining(mealsRemaining + 1)} disabled={mealsRemaining >= 6 || loading}>
+            +
+          </button>
+        </div>
+      </div>
 
       {loading && <p className="scan-status">Recherche des meilleurs ingrédients…</p>}
       {error && <p className="fridge-error">{error}</p>}

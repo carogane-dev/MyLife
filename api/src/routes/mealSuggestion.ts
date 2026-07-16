@@ -7,6 +7,17 @@ import { buildMealSuggestion } from "../mealBuilder.js";
 
 export const mealSuggestionRouter = Router();
 
+// Une macro est considérée "atteinte" pour la journée si ce qu'il en reste
+// représente 5% ou moins de l'objectif — au-delà, on continue de proposer
+// des repas plutôt que de s'arrêter dès que les calories seules sont
+// atteintes (ce qui peut laisser d'autres macros très déséquilibrées).
+const CLOSE_ENOUGH_RATIO = 0.05;
+
+function isCloseEnough(remainingValue: number, target: number): boolean {
+  if (target <= 0) return true;
+  return remainingValue <= target * CLOSE_ENOUGH_RATIO;
+}
+
 mealSuggestionRouter.get("/", requireAuth, async (req, res) => {
   const profile = await prisma.nutritionProfile.findUnique({ where: { userId: req.user!.id } });
   if (!profile) {
@@ -54,8 +65,14 @@ mealSuggestionRouter.get("/", requireAuth, async (req, res) => {
     carbs: Math.max(0, targets.targetCarbsG - consumed.carbs),
   };
 
-  if (remaining.calories <= 0) {
-    res.status(200).json({ suggestion: null, reason: "Objectif du jour déjà atteint 🎉" });
+  const allMacrosCloseEnough =
+    isCloseEnough(remaining.calories, targets.targetCalories) &&
+    isCloseEnough(remaining.protein, targets.targetProteinG) &&
+    isCloseEnough(remaining.fat, targets.targetFatG) &&
+    isCloseEnough(remaining.carbs, targets.targetCarbsG);
+
+  if (allMacrosCloseEnough) {
+    res.status(200).json({ suggestion: null, reason: "Objectif du jour déjà atteint sur toutes les macros 🎉" });
     return;
   }
 
@@ -68,7 +85,12 @@ mealSuggestionRouter.get("/", requireAuth, async (req, res) => {
   const excludeParam = typeof req.query.exclude === "string" ? req.query.exclude : "";
   const excludeIds = new Set(excludeParam.split(",").filter(Boolean));
 
-  const suggestion = buildMealSuggestion(fridgeItems, remaining, excludeIds);
+  const mealsParam = typeof req.query.meals === "string" ? Number.parseInt(req.query.meals, 10) : NaN;
+  const mealsRemaining = Number.isFinite(mealsParam) ? Math.min(6, Math.max(1, mealsParam)) : 3;
+
+  const dailyTargets = { protein: targets.targetProteinG, fat: targets.targetFatG, carbs: targets.targetCarbsG };
+
+  const suggestion = buildMealSuggestion(fridgeItems, remaining, dailyTargets, mealsRemaining, excludeIds);
 
   if (!suggestion) {
     res.status(200).json({
