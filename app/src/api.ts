@@ -17,6 +17,7 @@ export interface FridgeItem {
   quantity: number;
   unit: string;
   barcode: string | null;
+  expiresAt: string;
   caloriesPer100g: number;
   proteinPer100g: number;
   fatPer100g: number;
@@ -28,7 +29,7 @@ export interface FridgeItem {
 
 export interface NutritionProfile {
   id: string;
-  sex: "homme" | "femme";
+  sex: "homme" | "femme" | "autre";
   age: number;
   heightCm: number;
   weightKg: number;
@@ -38,7 +39,7 @@ export interface NutritionProfile {
 }
 
 export interface NutritionProfileDraft {
-  sex: "homme" | "femme";
+  sex: "homme" | "femme" | "autre";
   age: number;
   heightCm: number;
   weightKg: number;
@@ -52,6 +53,7 @@ export interface FridgeItemDraft {
   subcategory: string;
   quantity: number;
   unit: string;
+  expiresAt: string | null;
   caloriesPer100g: number;
   proteinPer100g: number;
   fatPer100g: number;

@@ -250,6 +250,22 @@ body {
   font-size: 0.85rem;
 }
 
+.fridge-sort-control {
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.fridge-sort-control select {
+  font-family: inherit;
+  font-size: 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.3rem 0.6rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
 .fridge-item-row {
   display: flex;
   justify-content: space-between;
@@ -258,7 +274,27 @@ body {
   cursor: pointer;
 }
 
-.fridge-item-row span:first-child {
+.fridge-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.fridge-expiry {
+  font-size: 0.75rem;
+}
+
+.fridge-expiry.soon {
+  color: #c9820c;
+  font-weight: 600;
+}
+
+.fridge-expiry.expired {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.fridge-item-row > span:first-child {
   color: var(--color-text);
 }
 
@@ -425,6 +461,12 @@ body {
   color: var(--color-text-muted);
 }
 
+.scan-hint {
+  margin: -0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
 .scan-confirm-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -550,7 +592,7 @@ body {
 
 .choice-cards {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
   gap: 0.75rem;
 }
 

@@ -5,7 +5,7 @@ import { isFiniteNumber, isNonEmptyString } from "../validation.js";
 
 export const profileRouter = Router();
 
-const SEX_VALUES = ["homme", "femme"];
+const SEX_VALUES = ["homme", "femme", "autre"];
 const ACTIVITY_LEVELS = ["sedentaire", "leger", "modere", "actif", "tres_actif"];
 
 profileRouter.get("/", requireAuth, async (req, res) => {

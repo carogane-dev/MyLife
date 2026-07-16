@@ -58,6 +58,12 @@ model FridgeItem {
   unit        String // ex. "pièce", "g", "kg", "L"
   barcode     String?
 
+  // Toujours fournie explicitement par l'app (validation POST /api/fridge) ;
+  // le défaut n'existe que pour permettre la migration sur les lignes
+  // déjà existantes. Jamais issue du code-barres (OFF ne connaît pas la
+  // date de péremption d'un exemplaire physique, elle varie par lot).
+  expiresAt DateTime @default(now())
+
   // Toujours renseignées : valeur réelle du code-barres si disponible,
   // sinon valeur type de la catégorie (voir nutritionDefaults.ts).
   caloriesPer100g    Float   @default(0)

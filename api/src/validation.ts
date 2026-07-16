@@ -17,3 +17,7 @@ export function isNonEmptyString(value: unknown): value is string {
 export function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
+
+export function isValidDateString(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 && !Number.isNaN(Date.parse(value));
+}
