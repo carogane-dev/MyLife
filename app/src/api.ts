@@ -1,5 +1,7 @@
-// URL du back-end : à ajuster selon l'environnement (dev local, mobile, prod)
-const API_BASE_URL = "http://localhost:3001";
+// Chemin relatif : passe par le proxy Vite (voir vite.config.ts) qui redirige
+// /api vers le back-end. Fonctionne pareil en local, sur le réseau local
+// (IP du PC) ou via un tunnel HTTPS, sans jamais coder une adresse en dur.
+const API_BASE_URL = "";
 
 export interface User {
   id: string;

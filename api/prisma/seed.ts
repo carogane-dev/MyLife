@@ -14,11 +14,11 @@ const FRIDGE_ITEMS: Array<{
   fatPer100g: number;
   carbsPer100g: number;
 }> = [
-  { category: "Fromage", subcategory: "Chèvre", name: "Crottin de Chavignol", quantity: 2, unit: "pièce", caloriesPer100g: 330, proteinPer100g: 20, fatPer100g: 27, carbsPer100g: 1 },
-  { category: "Fromage", subcategory: "Chèvre", name: "Bûche de chèvre", quantity: 200, unit: "g", caloriesPer100g: 290, proteinPer100g: 18, fatPer100g: 24, carbsPer100g: 1 },
-  { category: "Fromage", subcategory: "Vache", name: "Comté", quantity: 300, unit: "g", caloriesPer100g: 410, proteinPer100g: 27, fatPer100g: 33, carbsPer100g: 0 },
-  { category: "Fromage", subcategory: "Vache", name: "Camembert", quantity: 1, unit: "pièce", caloriesPer100g: 300, proteinPer100g: 20, fatPer100g: 24, carbsPer100g: 0.5 },
-  { category: "Fromage", subcategory: "Vache", name: "Emmental râpé", quantity: 150, unit: "g", caloriesPer100g: 380, proteinPer100g: 28, fatPer100g: 30, carbsPer100g: 0 },
+  { category: "Produit laitier", subcategory: "Chèvre", name: "Crottin de Chavignol", quantity: 2, unit: "pièce", caloriesPer100g: 330, proteinPer100g: 20, fatPer100g: 27, carbsPer100g: 1 },
+  { category: "Produit laitier", subcategory: "Chèvre", name: "Bûche de chèvre", quantity: 200, unit: "g", caloriesPer100g: 290, proteinPer100g: 18, fatPer100g: 24, carbsPer100g: 1 },
+  { category: "Produit laitier", subcategory: "Vache", name: "Comté", quantity: 300, unit: "g", caloriesPer100g: 410, proteinPer100g: 27, fatPer100g: 33, carbsPer100g: 0 },
+  { category: "Produit laitier", subcategory: "Vache", name: "Camembert", quantity: 1, unit: "pièce", caloriesPer100g: 300, proteinPer100g: 20, fatPer100g: 24, carbsPer100g: 0.5 },
+  { category: "Produit laitier", subcategory: "Vache", name: "Emmental râpé", quantity: 150, unit: "g", caloriesPer100g: 380, proteinPer100g: 28, fatPer100g: 30, carbsPer100g: 0 },
 
   { category: "Viande", subcategory: "Bœuf", name: "Steak haché", quantity: 500, unit: "g", caloriesPer100g: 200, proteinPer100g: 19, fatPer100g: 13, carbsPer100g: 0 },
   { category: "Viande", subcategory: "Bœuf", name: "Entrecôte", quantity: 2, unit: "pièce", caloriesPer100g: 250, proteinPer100g: 26, fatPer100g: 16, carbsPer100g: 0 },
