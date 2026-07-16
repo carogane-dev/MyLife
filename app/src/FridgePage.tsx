@@ -71,14 +71,35 @@ export default function FridgePage({ onBack }: { onBack: () => void }) {
                       </div>
                       {subExpanded && (
                         <ul className="fridge-item-list">
-                          {subItems.map((item) => (
-                            <li className="fridge-item-row" key={item.id}>
-                              <span>{item.name}</span>
-                              <span>
-                                {item.quantity} {item.unit}
-                              </span>
-                            </li>
-                          ))}
+                          {subItems.map((item) => {
+                            const itemKey = `item:${item.id}`;
+                            const itemExpanded = expanded.has(itemKey);
+                            return (
+                              <li key={item.id}>
+                                <div className="fridge-item-row" onClick={() => toggle(itemKey)}>
+                                  <span>{item.name}</span>
+                                  <span>
+                                    {item.quantity} {item.unit}
+                                    <span className={`chevron ${itemExpanded ? "expanded" : ""}`}>▸</span>
+                                  </span>
+                                </div>
+                                {itemExpanded && (
+                                  <div className="fridge-item-detail">
+                                    <div className="fridge-item-nutrition">
+                                      <span>{item.caloriesPer100g} kcal</span>
+                                      <span>{item.proteinPer100g} g protéines</span>
+                                      <span>{item.fatPer100g} g lipides</span>
+                                      <span>{item.carbsPer100g} g glucides</span>
+                                    </div>
+                                    <span className="fridge-item-nutrition-note">pour 100g</span>
+                                    {item.nutritionEstimated && (
+                                      <span className="fridge-item-estimated-badge">Estimé</span>
+                                    )}
+                                  </div>
+                                )}
+                              </li>
+                            );
+                          })}
                         </ul>
                       )}
                     </div>

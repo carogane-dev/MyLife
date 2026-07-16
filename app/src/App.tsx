@@ -3,11 +3,12 @@ import { checkHealth, getMe, signOut } from "./api.js";
 import type { User } from "./api.js";
 import AuthPage from "./AuthPage.js";
 import FridgePage from "./FridgePage.js";
+import ScanPage from "./ScanPage.js";
 import "./App.css";
 
 type ConnectionState = "checking" | "connected" | "error";
 type AuthState = "loading" | "authenticated" | "unauthenticated";
-type Page = "home" | "fridge";
+type Page = "home" | "fridge" | "scan";
 
 const FEATURES: { icon: string; title: string; description: string; page?: Page }[] = [
   {
@@ -15,6 +16,12 @@ const FEATURES: { icon: string; title: string; description: string; page?: Page 
     title: "Frigo",
     description: "Parcours ce qu'il y a dans ton frigo.",
     page: "fridge",
+  },
+  {
+    icon: "🏷️",
+    title: "Scanner",
+    description: "Scanne un code-barres pour ajouter un aliment au frigo.",
+    page: "scan",
   },
   {
     icon: "📷",
@@ -94,6 +101,10 @@ export default function App() {
 
       {authState === "authenticated" && page === "fridge" && (
         <FridgePage onBack={() => setPage("home")} />
+      )}
+
+      {authState === "authenticated" && page === "scan" && (
+        <ScanPage onBack={() => setPage("home")} />
       )}
 
       {authState === "authenticated" && page === "home" && (
