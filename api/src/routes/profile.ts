@@ -9,7 +9,7 @@ export const profileRouter = Router();
 
 const SEX_VALUES = ["homme", "femme", "autre"];
 const ACTIVITY_LEVELS = ["sedentaire", "leger", "modere", "actif", "tres_actif"];
-const GOAL_MODES = ["precision", "ligne", "elite", "frigo_only"];
+const GOAL_MODES = ["frigo_only", "chill", "ligne", "elite"];
 const BODY_TYPES = ["endurance", "athletic", "mass"];
 
 function toTargets(profile: {

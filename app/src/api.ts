@@ -38,7 +38,7 @@ export interface NutritionProfile {
   heightCm: number;
   weightKg: number;
   activityLevel: "sedentaire" | "leger" | "modere" | "actif" | "tres_actif";
-  goalMode: "precision" | "ligne" | "elite" | "frigo_only";
+  goalMode: "frigo_only" | "chill" | "ligne" | "elite";
   bodyType: "endurance" | "athletic" | "mass" | null;
   createdAt: string;
   updatedAt: string;
@@ -50,7 +50,7 @@ export interface NutritionProfileDraft {
   heightCm: number;
   weightKg: number;
   activityLevel: "sedentaire" | "leger" | "modere" | "actif" | "tres_actif";
-  goalMode: "precision" | "ligne" | "elite" | "frigo_only";
+  goalMode: "frigo_only" | "chill" | "ligne" | "elite";
   bodyType: "endurance" | "athletic" | "mass" | null;
 }
 

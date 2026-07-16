@@ -1,6 +1,6 @@
 export type Sex = "homme" | "femme" | "autre";
 export type ActivityLevel = "sedentaire" | "leger" | "modere" | "actif" | "tres_actif";
-export type GoalMode = "precision" | "ligne" | "elite" | "frigo_only";
+export type GoalMode = "frigo_only" | "chill" | "ligne" | "elite";
 export type BodyType = "endurance" | "athletic" | "mass";
 
 export interface NutritionCalculatorInput {
@@ -46,16 +46,21 @@ export const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
 // "elite" et "frigo_only" ne sont pas ici : "elite" utilise BODY_TYPE_CONFIGS,
 // "frigo_only" ne calcule jamais de cible.
 const GOAL_MODE_CONFIGS: Partial<Record<GoalMode, ModeConfig>> = {
-  precision: { calorieMultiplier: 1.0, proteinPerKg: 1.8, fatPercent: 0.3 },
+  // Suivi souple : proche du TDEE, protéines à un niveau facile à
+  // atteindre sans être pointilleux.
+  chill: { calorieMultiplier: 1.0, proteinPerKg: 1.6, fatPercent: 0.3 },
   // Déficit modéré (15%) + protéines élevées pour préserver le muscle
   // pendant la perte de poids.
   ligne: { calorieMultiplier: 0.85, proteinPerKg: 2.2, fatPercent: 0.25 },
 };
 
+// Mode Élite : déficit plus marqué que "Rester en forme" et protéines
+// poussées au maximum réaliste, pour un physique sec et musclé — quelle
+// que soit la morphologie visée, l'objectif reste "pointu".
 export const BODY_TYPE_CONFIGS: Record<BodyType, ModeConfig> = {
-  endurance: { calorieMultiplier: 0.95, proteinPerKg: 1.6, fatPercent: 0.25 },
-  athletic: { calorieMultiplier: 1.05, proteinPerKg: 2.0, fatPercent: 0.25 },
-  mass: { calorieMultiplier: 1.15, proteinPerKg: 2.2, fatPercent: 0.25 },
+  endurance: { calorieMultiplier: 0.83, proteinPerKg: 1.8, fatPercent: 0.22 },
+  athletic: { calorieMultiplier: 0.8, proteinPerKg: 2.2, fatPercent: 0.22 },
+  mass: { calorieMultiplier: 0.78, proteinPerKg: 2.4, fatPercent: 0.2 },
 };
 
 // Constante de sexe dans la formule de Mifflin-St Jeor ; pour "autre", on

@@ -4,10 +4,16 @@ import BodySilhouette from "./BodySilhouette.js";
 
 export const GOAL_MODE_OPTIONS: ChoiceOption[] = [
   {
-    value: "precision",
-    label: "Mode Sniper",
-    description: "Vise l'exact TDEE calculé, aucune marge.",
-    badge: "★★★ Extrême",
+    value: "frigo_only",
+    label: "Mode Libre",
+    description: "Pas d'objectif calorique, juste ton inventaire.",
+    badge: "☆☆☆ Aucune pression",
+  },
+  {
+    value: "chill",
+    label: "Mode Chill",
+    description: "Suit tes calories vers un objectif, sans pression excessive.",
+    badge: "★☆☆ Souple",
   },
   {
     value: "ligne",
@@ -18,32 +24,26 @@ export const GOAL_MODE_OPTIONS: ChoiceOption[] = [
   {
     value: "elite",
     label: "Mode Élite",
-    description: "Apports optimisés pour un physique ciblé (choisis ta morphologie).",
-    badge: "🏆 Physique ciblé",
-  },
-  {
-    value: "frigo_only",
-    label: "Mode Libre",
-    description: "Pas d'objectif calorique, juste ton inventaire.",
-    badge: "☆☆☆ Aucune pression",
+    description: "Déficit maximal et protéines au max pour un physique sec et musclé (choisis ta morphologie).",
+    badge: "★★★ Extrême",
   },
 ];
 
 const BODY_TYPE_LABELS: Record<Sex, Record<BodyType, { label: string; description: string }>> = {
   homme: {
-    endurance: { label: "Coureur / Élancé", description: "Corps sec, endurance, glucides élevés." },
-    athletic: { label: "Athlétique équilibré", description: "Musclé et défini, léger surplus." },
-    mass: { label: "Bodybuilder / Masse max", description: "Surplus calorique, développement musculaire maximal." },
+    endurance: { label: "Coureur / Élancé", description: "Déficit marqué, corps sec, glucides élevés pour l'endurance." },
+    athletic: { label: "Athlétique équilibré", description: "Déficit soutenu, musclé et défini." },
+    mass: { label: "Sculpté / Sec et musclé", description: "Déficit maximal, protéines au max pour préserver le muscle." },
   },
   femme: {
-    endurance: { label: "Coureuse / Élancée", description: "Corps sec, endurance, glucides élevés." },
-    athletic: { label: "Tonique équilibrée", description: "Musclée et définie, léger surplus." },
-    mass: { label: "Fitness galbée / Masse max", description: "Surplus calorique, développement musculaire maximal." },
+    endurance: { label: "Coureuse / Élancée", description: "Déficit marqué, corps sec, glucides élevés pour l'endurance." },
+    athletic: { label: "Tonique équilibrée", description: "Déficit soutenu, musclée et définie." },
+    mass: { label: "Sculptée / Sec et musclée", description: "Déficit maximal, protéines au max pour préserver le muscle." },
   },
   autre: {
-    endurance: { label: "Élancé(e) / Endurance", description: "Corps sec, endurance, glucides élevés." },
-    athletic: { label: "Athlétique équilibré(e)", description: "Musclé(e) et défini(e), léger surplus." },
-    mass: { label: "Masse musculaire max", description: "Surplus calorique, développement musculaire maximal." },
+    endurance: { label: "Élancé(e) / Endurance", description: "Déficit marqué, corps sec, glucides élevés pour l'endurance." },
+    athletic: { label: "Athlétique équilibré(e)", description: "Déficit soutenu, musclé(e) et défini(e)." },
+    mass: { label: "Sculpté(e) / Sec et musclé(e)", description: "Déficit maximal, protéines au max pour préserver le muscle." },
   },
 };
 
@@ -66,10 +66,10 @@ const ACTIVITY_LABELS: Record<string, string> = {
 };
 
 const GOAL_MODE_LABELS: Record<GoalMode, string> = {
-  precision: "Mode Sniper",
+  frigo_only: "Mode Libre",
+  chill: "Mode Chill",
   ligne: "Rester en forme",
   elite: "Mode Élite",
-  frigo_only: "Mode Libre",
 };
 
 function explanationReason(
@@ -78,16 +78,20 @@ function explanationReason(
   sex: Sex | undefined,
   targets: NutritionTargets
 ): string {
+  if (goalMode === "chill") {
+    return "Objectif proche de ta dépense quotidienne (TDEE), sans déficit marqué — un suivi volontairement souple, facile à tenir au jour le jour.";
+  }
   if (goalMode === "ligne") {
     return "Le déficit est volontairement modéré, avec des protéines élevées (2,2g/kg) pour préserver ta masse musculaire pendant la perte.";
   }
   if (goalMode === "elite" && bodyType) {
     const labels = BODY_TYPE_LABELS[sex ?? "autre"] ?? BODY_TYPE_LABELS.autre;
-    const proteinNote =
-      targets.proteinPerKgUsed >= 2
-        ? "des protéines élevées pour maximiser le développement musculaire"
-        : "des protéines modérées adaptées à l'endurance";
-    return `Les apports sont ajustés pour viser un physique type "${labels[bodyType].label}" : ${proteinNote}.`;
+    const proteinNote: Record<BodyType, string> = {
+      endurance: "des protéines élevées adaptées à l'effort d'endurance, glucides généreux pour l'énergie",
+      athletic: "des protéines élevées pour un physique défini et musclé",
+      mass: "des protéines poussées au maximum pour préserver un maximum de muscle malgré le déficit",
+    };
+    return `Déficit marqué pour viser un physique type "${labels[bodyType].label}" : ${proteinNote[bodyType]}.`;
   }
   return "Répartition standard : protéines et lipides à des niveaux de référence pour un objectif neutre.";
 }
@@ -110,7 +114,7 @@ export default function NutritionTargetsSummary({
   }
 
   if (goalMode === "elite" && !bodyType) {
-    return <p className="nutrition-targets-free">🏆 Choisis ta morphologie ci-dessous pour voir tes objectifs.</p>;
+    return <p className="nutrition-targets-free">💪 Choisis ta morphologie ci-dessous pour voir tes objectifs.</p>;
   }
 
   if (!targets) {
