@@ -6,6 +6,7 @@ import { prisma } from "./db.js";
 import { authRouter } from "./routes/auth.js";
 import { fridgeRouter } from "./routes/fridge.js";
 import { profileRouter } from "./routes/profile.js";
+import { consumptionRouter } from "./routes/consumption.js";
 
 const app = express();
 app.use(
@@ -19,6 +20,7 @@ app.use(cookieParser(process.env.SESSION_COOKIE_SECRET));
 app.use("/api/auth", authRouter);
 app.use("/api/fridge", fridgeRouter);
 app.use("/api/profile", profileRouter);
+app.use("/api/consumption", consumptionRouter);
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 

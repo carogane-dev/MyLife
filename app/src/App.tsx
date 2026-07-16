@@ -6,11 +6,13 @@ import FridgePage from "./FridgePage.js";
 import ScanPage from "./ScanPage.js";
 import OnboardingPage from "./OnboardingPage.js";
 import SettingsPage from "./SettingsPage.js";
+import DashboardPage from "./DashboardPage.js";
+import HomeProgress from "./HomeProgress.js";
 import "./App.css";
 
 type ConnectionState = "checking" | "connected" | "error";
 type AuthState = "loading" | "authenticated" | "unauthenticated";
-type Page = "home" | "fridge" | "scan" | "settings";
+type Page = "home" | "fridge" | "scan" | "settings" | "dashboard";
 
 const FEATURES: { icon: string; title: string; description: string; page?: Page }[] = [
   {
@@ -39,6 +41,7 @@ const FEATURES: { icon: string; title: string; description: string; page?: Page 
     icon: "📊",
     title: "Statistiques",
     description: "Visualise tes habitudes alimentaires.",
+    page: "dashboard",
   },
 ];
 
@@ -134,12 +137,18 @@ export default function App() {
         <SettingsPage onBack={() => setPage("home")} />
       )}
 
+      {authState === "authenticated" && profile && page === "dashboard" && (
+        <DashboardPage onBack={() => setPage("home")} />
+      )}
+
       {authState === "authenticated" && profile && page === "home" && (
         <>
           <section className="hero">
             <h2>Bienvenue 👋</h2>
             <p>Suis tes repas et découvre tes habitudes alimentaires, en toute simplicité.</p>
           </section>
+
+          {profile.goalMode !== "frigo_only" && <HomeProgress profile={profile} />}
 
           <section className="feature-grid">
             {FEATURES.map((feature) => (

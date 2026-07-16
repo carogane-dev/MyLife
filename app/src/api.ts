@@ -29,6 +29,19 @@ export interface FridgeItem {
   updatedAt: string;
 }
 
+export interface ConsumptionEntry {
+  id: string;
+  fridgeItemId: string | null;
+  name: string;
+  quantity: number;
+  unit: string;
+  calories: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+  consumedAt: string;
+}
+
 export type { NutritionTargets } from "./nutritionCalculator.js";
 
 export interface NutritionProfile {
@@ -174,6 +187,28 @@ export async function deleteFridgeItem(id: string): Promise<void> {
     credentials: "include",
   });
   await parseJsonOrThrow(res);
+}
+
+export async function markItemEaten(
+  fridgeItemId: string,
+  quantity: number
+): Promise<{ entry: ConsumptionEntry; itemDeleted: boolean }> {
+  const res = await fetch(`${API_BASE_URL}/api/consumption`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fridgeItemId, quantity }),
+  });
+  return parseJsonOrThrow(res);
+}
+
+export async function getConsumptionEntries(from: string, to: string): Promise<ConsumptionEntry[]> {
+  const res = await fetch(
+    `${API_BASE_URL}/api/consumption?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+    { method: "GET", credentials: "include" }
+  );
+  const body = await parseJsonOrThrow(res);
+  return body.entries;
 }
 
 export async function getProfile(): Promise<{ profile: NutritionProfile | null; targets: NutritionTargets | null }> {

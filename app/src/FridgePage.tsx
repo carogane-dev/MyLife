@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { deleteFridgeItem, getFridgeItems } from "./api.js";
+import { deleteFridgeItem, getFridgeItems, markItemEaten } from "./api.js";
 import type { FridgeItem } from "./api.js";
 import FridgeItemFormPage from "./FridgeItemFormPage.js";
 
@@ -47,6 +47,9 @@ export default function FridgePage({ onBack }: { onBack: () => void }) {
   const [editingItem, setEditingItem] = useState<FridgeItem | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [eatingId, setEatingId] = useState<string | null>(null);
+  const [eatQuantity, setEatQuantity] = useState(0);
+  const [eatError, setEatError] = useState<string | null>(null);
 
   function reload() {
     getFridgeItems()
@@ -81,6 +84,23 @@ export default function FridgePage({ onBack }: { onBack: () => void }) {
       reload();
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : "Une erreur est survenue.");
+    }
+  }
+
+  function startEat(item: FridgeItem) {
+    setEatingId(item.id);
+    setEatQuantity(item.quantity);
+    setEatError(null);
+  }
+
+  async function handleEat(item: FridgeItem) {
+    setEatError(null);
+    try {
+      await markItemEaten(item.id, eatQuantity);
+      setEatingId(null);
+      reload();
+    } catch (err) {
+      setEatError(err instanceof Error ? err.message : "Une erreur est survenue.");
     }
   }
 
@@ -189,7 +209,38 @@ export default function FridgePage({ onBack }: { onBack: () => void }) {
                                     {item.nutritionEstimated && (
                                       <span className="fridge-item-estimated-badge">Estimé</span>
                                     )}
+                                    {eatingId === item.id ? (
+                                      <div className="fridge-eat-form" onClick={(e) => e.stopPropagation()}>
+                                        <label>
+                                          Quantité mangée ({item.unit})
+                                          <input
+                                            type="number"
+                                            min="0"
+                                            max={item.quantity}
+                                            step="any"
+                                            value={eatQuantity}
+                                            onChange={(e) => setEatQuantity(Number(e.target.value))}
+                                          />
+                                        </label>
+                                        {eatError && <p className="fridge-error">{eatError}</p>}
+                                        <div className="fridge-item-actions">
+                                          <button
+                                            className="fridge-item-action-button confirm eat"
+                                            onClick={() => handleEat(item)}
+                                            disabled={eatQuantity <= 0 || eatQuantity > item.quantity}
+                                          >
+                                            Confirmer
+                                          </button>
+                                          <button className="fridge-item-action-button" onClick={() => setEatingId(null)}>
+                                            Annuler
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ) : (
                                     <div className="fridge-item-actions" onClick={(e) => e.stopPropagation()}>
+                                      <button className="fridge-item-action-button eat" onClick={() => startEat(item)}>
+                                        🍴 Manger
+                                      </button>
                                       <button
                                         className="fridge-item-action-button"
                                         onClick={() => {
@@ -223,6 +274,7 @@ export default function FridgePage({ onBack }: { onBack: () => void }) {
                                         </button>
                                       )}
                                     </div>
+                                    )}
                                   </div>
                                 )}
                               </li>
