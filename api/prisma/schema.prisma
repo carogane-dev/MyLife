@@ -34,7 +34,8 @@ model NutritionProfile {
   heightCm      Float
   weightKg      Float
   activityLevel String // "sedentaire" | "leger" | "modere" | "actif" | "tres_actif"
-  goalMode      String @default("ligne") // "precision" | "ligne" | "frigo_only"
+  goalMode      String  @default("ligne") // "precision" | "ligne" | "elite" | "frigo_only"
+  bodyType      String? // "endurance" | "athletic" | "mass" — utilisé uniquement si goalMode === "elite"
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

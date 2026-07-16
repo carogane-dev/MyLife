@@ -3,7 +3,7 @@ import { getProfile, saveProfile } from "./api.js";
 import type { NutritionProfileDraft, NutritionTargets } from "./api.js";
 import SliderInput from "./SliderInput.js";
 import ChoiceCards from "./ChoiceCards.js";
-import NutritionTargetsSummary, { GOAL_MODE_OPTIONS } from "./NutritionTargetsSummary.js";
+import NutritionTargetsSummary, { GOAL_MODE_OPTIONS, getBodyTypeOptions } from "./NutritionTargetsSummary.js";
 import { calculateNutritionTargets } from "./nutritionCalculator.js";
 
 const SEX_OPTIONS = [
@@ -39,6 +39,7 @@ export default function SettingsPage({ onBack }: { onBack: () => void }) {
             weightKg: profile.weightKg,
             activityLevel: profile.activityLevel,
             goalMode: profile.goalMode,
+            bodyType: profile.bodyType,
           });
           setTargets(targets);
         }
@@ -107,12 +108,34 @@ export default function SettingsPage({ onBack }: { onBack: () => void }) {
             <ChoiceCards
               options={GOAL_MODE_OPTIONS}
               value={draft.goalMode}
-              onChange={(v) => update({ goalMode: v as NutritionProfileDraft["goalMode"] })}
+              onChange={(v) =>
+                update({
+                  goalMode: v as NutritionProfileDraft["goalMode"],
+                  bodyType: v === "elite" ? draft.bodyType : null,
+                })
+              }
               stacked
             />
+            {draft.goalMode === "elite" && (
+              <div className="body-type-picker">
+                <p className="wizard-hint">Choisis la morphologie visée.</p>
+                <ChoiceCards
+                  options={getBodyTypeOptions(draft.sex)}
+                  value={draft.bodyType ?? ""}
+                  onChange={(v) => update({ bodyType: v as NutritionProfileDraft["bodyType"] })}
+                  stacked
+                />
+              </div>
+            )}
           </div>
 
-          <NutritionTargetsSummary goalMode={draft.goalMode} targets={targets} activityLevel={draft.activityLevel} />
+          <NutritionTargetsSummary
+            goalMode={draft.goalMode}
+            bodyType={draft.bodyType}
+            sex={draft.sex}
+            targets={targets}
+            activityLevel={draft.activityLevel}
+          />
 
           {saved && <p className="settings-saved-note">Profil mis à jour ✅</p>}
 

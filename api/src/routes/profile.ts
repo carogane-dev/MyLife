@@ -3,33 +3,46 @@ import { prisma } from "../db.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { isFiniteNumber, isNonEmptyString } from "../validation.js";
 import { calculateNutritionTargets } from "../nutritionCalculator.js";
-import type { ActivityLevel, GoalMode, Sex } from "../nutritionCalculator.js";
+import type { ActivityLevel, BodyType, GoalMode, Sex } from "../nutritionCalculator.js";
 
 export const profileRouter = Router();
 
 const SEX_VALUES = ["homme", "femme", "autre"];
 const ACTIVITY_LEVELS = ["sedentaire", "leger", "modere", "actif", "tres_actif"];
-const GOAL_MODES = ["precision", "ligne", "frigo_only"];
+const GOAL_MODES = ["precision", "ligne", "elite", "frigo_only"];
+const BODY_TYPES = ["endurance", "athletic", "mass"];
+
+function toTargets(profile: {
+  sex: string;
+  age: number;
+  heightCm: number;
+  weightKg: number;
+  activityLevel: string;
+  goalMode: string;
+  bodyType: string | null;
+}) {
+  return calculateNutritionTargets({
+    sex: profile.sex as Sex,
+    age: profile.age,
+    heightCm: profile.heightCm,
+    weightKg: profile.weightKg,
+    activityLevel: profile.activityLevel as ActivityLevel,
+    goalMode: profile.goalMode as GoalMode,
+    bodyType: profile.bodyType as BodyType | null,
+  });
+}
 
 profileRouter.get("/", requireAuth, async (req, res) => {
   const profile = await prisma.nutritionProfile.findUnique({
     where: { userId: req.user!.id },
   });
-  const targets = profile
-    ? calculateNutritionTargets({
-        sex: profile.sex as Sex,
-        age: profile.age,
-        heightCm: profile.heightCm,
-        weightKg: profile.weightKg,
-        activityLevel: profile.activityLevel as ActivityLevel,
-        goalMode: profile.goalMode as GoalMode,
-      })
-    : null;
+  const targets = profile ? toTargets(profile) : null;
   res.status(200).json({ profile, targets });
 });
 
 profileRouter.put("/", requireAuth, async (req, res) => {
   const body = req.body ?? {};
+  const isElite = body.goalMode === "elite";
 
   if (
     !isNonEmptyString(body.sex) ||
@@ -46,7 +59,8 @@ profileRouter.put("/", requireAuth, async (req, res) => {
     !isNonEmptyString(body.activityLevel) ||
     !ACTIVITY_LEVELS.includes(body.activityLevel) ||
     !isNonEmptyString(body.goalMode) ||
-    !GOAL_MODES.includes(body.goalMode)
+    !GOAL_MODES.includes(body.goalMode) ||
+    (isElite && (!isNonEmptyString(body.bodyType) || !BODY_TYPES.includes(body.bodyType)))
   ) {
     res.status(400).json({ error: "Profil invalide, vérifie les valeurs saisies." });
     return;
@@ -59,6 +73,9 @@ profileRouter.put("/", requireAuth, async (req, res) => {
     weightKg: body.weightKg,
     activityLevel: body.activityLevel,
     goalMode: body.goalMode,
+    // Hors mode "elite", la morphologie n'a pas de sens : on efface un
+    // ancien choix éventuel plutôt que de laisser un état incohérent.
+    bodyType: isElite ? body.bodyType : null,
   };
 
   const profile = await prisma.nutritionProfile.upsert({
@@ -67,14 +84,7 @@ profileRouter.put("/", requireAuth, async (req, res) => {
     update: data,
   });
 
-  const targets = calculateNutritionTargets({
-    sex: profile.sex as Sex,
-    age: profile.age,
-    heightCm: profile.heightCm,
-    weightKg: profile.weightKg,
-    activityLevel: profile.activityLevel as ActivityLevel,
-    goalMode: profile.goalMode as GoalMode,
-  });
+  const targets = toTargets(profile);
 
   res.status(200).json({ profile, targets });
 });
