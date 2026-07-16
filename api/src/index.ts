@@ -7,6 +7,7 @@ import { authRouter } from "./routes/auth.js";
 import { fridgeRouter } from "./routes/fridge.js";
 import { profileRouter } from "./routes/profile.js";
 import { consumptionRouter } from "./routes/consumption.js";
+import { mealSuggestionRouter } from "./routes/mealSuggestion.js";
 
 const app = express();
 app.use(
@@ -21,6 +22,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/fridge", fridgeRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/consumption", consumptionRouter);
+app.use("/api/meal-suggestion", mealSuggestionRouter);
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 

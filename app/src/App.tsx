@@ -8,11 +8,12 @@ import OnboardingPage from "./OnboardingPage.js";
 import SettingsPage from "./SettingsPage.js";
 import DashboardPage from "./DashboardPage.js";
 import HomeProgress from "./HomeProgress.js";
+import MealBuilderPage from "./MealBuilderPage.js";
 import "./App.css";
 
 type ConnectionState = "checking" | "connected" | "error";
 type AuthState = "loading" | "authenticated" | "unauthenticated";
-type Page = "home" | "fridge" | "scan" | "settings" | "dashboard";
+type Page = "home" | "fridge" | "scan" | "settings" | "dashboard" | "meal-builder";
 
 const FEATURES: { icon: string; title: string; description: string; page?: Page }[] = [
   {
@@ -26,6 +27,12 @@ const FEATURES: { icon: string; title: string; description: string; page?: Page 
     title: "Scanner",
     description: "Scanne un code-barres pour ajouter un aliment au frigo.",
     page: "scan",
+  },
+  {
+    icon: "🍳",
+    title: "Composer un repas",
+    description: "Construit un repas équilibré à partir de ton frigo.",
+    page: "meal-builder",
   },
   {
     icon: "📷",
@@ -139,6 +146,10 @@ export default function App() {
 
       {authState === "authenticated" && profile && page === "dashboard" && (
         <DashboardPage onBack={() => setPage("home")} />
+      )}
+
+      {authState === "authenticated" && profile && page === "meal-builder" && (
+        <MealBuilderPage onBack={() => setPage("home")} />
       )}
 
       {authState === "authenticated" && profile && page === "home" && (

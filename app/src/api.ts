@@ -43,6 +43,22 @@ export interface ConsumptionEntry {
   consumedAt: string;
 }
 
+export interface MealSuggestionItem {
+  fridgeItemId: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  calories: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+}
+
+export interface MealSuggestion {
+  items: MealSuggestionItem[];
+  totals: { calories: number; protein: number; fat: number; carbs: number };
+}
+
 export type { NutritionTargets } from "./nutritionCalculator.js";
 
 export interface NutritionProfile {
@@ -211,6 +227,17 @@ export async function getConsumptionEntries(from: string, to: string): Promise<C
   );
   const body = await parseJsonOrThrow(res);
   return body.entries;
+}
+
+export async function getMealSuggestion(
+  excludeIds: string[] = []
+): Promise<{ suggestion: MealSuggestion | null; reason?: string }> {
+  const query = excludeIds.length > 0 ? `?exclude=${excludeIds.map(encodeURIComponent).join(",")}` : "";
+  const res = await fetch(`${API_BASE_URL}/api/meal-suggestion${query}`, {
+    method: "GET",
+    credentials: "include",
+  });
+  return parseJsonOrThrow(res);
 }
 
 export async function getProfile(): Promise<{ profile: NutritionProfile | null; targets: NutritionTargets | null }> {
