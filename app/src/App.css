@@ -617,6 +617,23 @@ body {
   border-color: var(--color-primary);
 }
 
+.choice-card-badge {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  margin-bottom: 0.3rem;
+}
+
+.choice-card.active .choice-card-badge {
+  border-color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.9);
+}
+
 .choice-card-label {
   font-weight: 600;
 }
@@ -719,6 +736,75 @@ body {
 .settings-form h3 {
   margin: 0 0 0.75rem;
   font-size: 1rem;
+}
+
+/* Statistiques nutritionnelles (reveal des objectifs) */
+
+.nutrition-targets {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.nutrition-targets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 0.75rem;
+}
+
+.nutrition-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.75rem 0.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.nutrition-stat-icon {
+  font-size: 1.3rem;
+}
+
+.nutrition-stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+}
+
+.nutrition-stat-calories .nutrition-stat-value {
+  color: #c9820c;
+}
+
+.nutrition-stat-label {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.nutrition-targets-explanation {
+  margin-top: 0.9rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.nutrition-targets-explanation summary {
+  cursor: pointer;
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
+.nutrition-targets-explanation p {
+  margin: 0.5rem 0 0;
+}
+
+.nutrition-targets-free {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  margin-top: 1.25rem;
 }
 
 .settings-saved-note {

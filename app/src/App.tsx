@@ -67,7 +67,7 @@ export default function App() {
   useEffect(() => {
     if (authState !== "authenticated") return;
     getProfile()
-      .then(setProfile)
+      .then(({ profile }) => setProfile(profile))
       .catch(() => setProfile(null));
   }, [authState]);
 
