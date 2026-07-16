@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
-import { checkHealth, getMe, signOut } from "./api.js";
-import type { User } from "./api.js";
+import { checkHealth, getMe, getProfile, signOut } from "./api.js";
+import type { NutritionProfile, User } from "./api.js";
 import AuthPage from "./AuthPage.js";
 import FridgePage from "./FridgePage.js";
 import ScanPage from "./ScanPage.js";
+import OnboardingPage from "./OnboardingPage.js";
+import SettingsPage from "./SettingsPage.js";
 import "./App.css";
 
 type ConnectionState = "checking" | "connected" | "error";
 type AuthState = "loading" | "authenticated" | "unauthenticated";
-type Page = "home" | "fridge" | "scan";
+type Page = "home" | "fridge" | "scan" | "settings";
 
 const FEATURES: { icon: string; title: string; description: string; page?: Page }[] = [
   {
@@ -45,6 +47,7 @@ export default function App() {
   const [authState, setAuthState] = useState<AuthState>("loading");
   const [user, setUser] = useState<User | null>(null);
   const [page, setPage] = useState<Page>("home");
+  const [profile, setProfile] = useState<NutritionProfile | null | undefined>(undefined);
 
   useEffect(() => {
     checkHealth()
@@ -61,12 +64,21 @@ export default function App() {
       .catch(() => setAuthState("unauthenticated"));
   }, []);
 
+  useEffect(() => {
+    if (authState !== "authenticated") return;
+    getProfile()
+      .then(setProfile)
+      .catch(() => setProfile(null));
+  }, [authState]);
+
   async function handleLogout() {
     try {
       await signOut();
     } finally {
       setUser(null);
       setAuthState("unauthenticated");
+      setProfile(undefined);
+      setPage("home");
     }
   }
 
@@ -80,6 +92,11 @@ export default function App() {
             {state === "connected" && "✅ Back-end connecté"}
             {state === "error" && "❌ Back-end injoignable"}
           </span>
+          {authState === "authenticated" && profile && (
+            <button className="settings-button" onClick={() => setPage("settings")} aria-label="Paramètres">
+              ⚙️
+            </button>
+          )}
           {authState === "authenticated" && (
             <button className="logout-button" onClick={handleLogout}>
               {user?.email} · Se déconnecter
@@ -99,15 +116,25 @@ export default function App() {
         />
       )}
 
-      {authState === "authenticated" && page === "fridge" && (
+      {authState === "authenticated" && profile === undefined && <p>Chargement…</p>}
+
+      {authState === "authenticated" && profile === null && (
+        <OnboardingPage onComplete={(savedProfile) => setProfile(savedProfile)} />
+      )}
+
+      {authState === "authenticated" && profile && page === "fridge" && (
         <FridgePage onBack={() => setPage("home")} />
       )}
 
-      {authState === "authenticated" && page === "scan" && (
+      {authState === "authenticated" && profile && page === "scan" && (
         <ScanPage onBack={() => setPage("home")} />
       )}
 
-      {authState === "authenticated" && page === "home" && (
+      {authState === "authenticated" && profile && page === "settings" && (
+        <SettingsPage onBack={() => setPage("home")} />
+      )}
+
+      {authState === "authenticated" && profile && page === "home" && (
         <>
           <section className="hero">
             <h2>Bienvenue 👋</h2>

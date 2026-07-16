@@ -453,3 +453,234 @@ body {
   gap: 0.5rem;
   margin-top: 1rem;
 }
+
+.settings-button {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  border-radius: 999px;
+  width: 2.1rem;
+  height: 2.1rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-button:hover {
+  border-color: var(--color-primary);
+}
+
+/* Curseur interactif */
+
+.slider-input {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.slider-input-label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.slider-input-value {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  transition: transform 0.15s;
+}
+
+.slider-input-value.pulsing {
+  transform: scale(1.08);
+}
+
+.slider-input input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--color-primary) 0%,
+    var(--color-primary) var(--fill),
+    var(--color-border) var(--fill),
+    var(--color-border) 100%
+  );
+  cursor: pointer;
+  outline: none;
+}
+
+.slider-input input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 3px solid var(--color-surface);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s;
+  cursor: pointer;
+}
+
+.slider-input input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.15);
+}
+
+.slider-input input[type="range"]::-moz-range-thumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 3px solid var(--color-surface);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s;
+  cursor: pointer;
+}
+
+.slider-input input[type="range"]::-moz-range-thumb:active {
+  transform: scale(1.15);
+}
+
+/* Cartes de choix */
+
+.choice-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.choice-cards.stacked {
+  grid-template-columns: 1fr;
+}
+
+.choice-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  padding: 1rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.choice-card:hover {
+  border-color: var(--color-primary);
+}
+
+.choice-card-label {
+  font-weight: 600;
+}
+
+.choice-card-description {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.choice-card.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
+}
+
+.choice-card.active .choice-card-description {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Assistant d'inscription (onboarding) */
+
+.onboarding-page {
+  display: flex;
+  justify-content: center;
+  padding-top: 2rem;
+}
+
+.wizard-progress {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.wizard-progress .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-border);
+  transition: background 0.2s, transform 0.2s;
+}
+
+.wizard-progress .dot.active {
+  background: var(--color-primary);
+  transform: scale(1.3);
+}
+
+.wizard-step h3 {
+  text-align: center;
+  margin: 0 0 0.5rem;
+}
+
+.wizard-hint {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin: 0 0 1rem;
+}
+
+.wizard-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+}
+
+.wizard-summary {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+
+.wizard-summary li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.wizard-summary li span:first-child {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* Paramètres */
+
+.settings-page h2 {
+  margin: 0 0 1rem;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 480px;
+}
+
+.settings-form h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.settings-saved-note {
+  margin: 0;
+  color: var(--color-primary-dark);
+  font-size: 0.85rem;
+}

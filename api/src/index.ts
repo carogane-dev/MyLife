@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import { prisma } from "./db.js";
 import { authRouter } from "./routes/auth.js";
 import { fridgeRouter } from "./routes/fridge.js";
+import { profileRouter } from "./routes/profile.js";
 
 const app = express();
 app.use(
@@ -17,6 +18,7 @@ app.use(express.json());
 app.use(cookieParser(process.env.SESSION_COOKIE_SECRET));
 app.use("/api/auth", authRouter);
 app.use("/api/fridge", fridgeRouter);
+app.use("/api/profile", profileRouter);
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 

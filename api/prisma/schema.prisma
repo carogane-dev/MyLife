@@ -11,13 +11,32 @@ datasource db {
 }
 
 model User {
-  id           String       @id @default(uuid())
-  email        String       @unique
-  passwordHash String
-  createdAt    DateTime     @default(now())
-  meals        MealEntry[]
-  sessions     Session[]
-  fridgeItems  FridgeItem[]
+  id               String            @id @default(uuid())
+  email            String            @unique
+  passwordHash     String
+  createdAt        DateTime          @default(now())
+  meals            MealEntry[]
+  sessions         Session[]
+  fridgeItems      FridgeItem[]
+  nutritionProfile NutritionProfile?
+}
+
+// Profil physiologique nécessaire au calcul futur des besoins caloriques
+// (BMR puis TDEE = BMR × multiplicateur d'activité : sédentaire ×1.2,
+// léger ×1.375, modéré ×1.55, actif ×1.725, très actif ×1.9).
+model NutritionProfile {
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @unique
+
+  sex           String // "homme" | "femme" — pour la formule BMR uniquement
+  age           Int // saisi via curseur, pas une date de naissance
+  heightCm      Float
+  weightKg      Float
+  activityLevel String // "sedentaire" | "leger" | "modere" | "actif" | "tres_actif"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Session {
