@@ -3,7 +3,7 @@ import { saveProfile } from "./api.js";
 import type { NutritionProfile, NutritionProfileDraft } from "./api.js";
 import SliderInput from "./SliderInput.js";
 import ChoiceCards from "./ChoiceCards.js";
-import NutritionTargetsSummary, { GOAL_MODE_OPTIONS } from "./NutritionTargetsSummary.js";
+import NutritionTargetsSummary, { GOAL_MODE_OPTIONS, getBodyTypeOptions } from "./NutritionTargetsSummary.js";
 import { calculateNutritionTargets } from "./nutritionCalculator.js";
 
 const SEX_OPTIONS = [
@@ -31,6 +31,7 @@ export default function OnboardingPage({ onComplete }: { onComplete: (profile: N
     weightKg: 70,
     activityLevel: "modere",
     goalMode: "ligne",
+    bodyType: null,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -110,9 +111,25 @@ export default function OnboardingPage({ onComplete }: { onComplete: (profile: N
             <ChoiceCards
               options={GOAL_MODE_OPTIONS}
               value={draft.goalMode}
-              onChange={(v) => update({ goalMode: v as NutritionProfileDraft["goalMode"] })}
+              onChange={(v) =>
+                update({
+                  goalMode: v as NutritionProfileDraft["goalMode"],
+                  bodyType: v === "elite" ? draft.bodyType : null,
+                })
+              }
               stacked
             />
+            {draft.goalMode === "elite" && (
+              <div className="body-type-picker">
+                <p className="wizard-hint">Choisis la morphologie visée.</p>
+                <ChoiceCards
+                  options={getBodyTypeOptions(draft.sex)}
+                  value={draft.bodyType ?? ""}
+                  onChange={(v) => update({ bodyType: v as NutritionProfileDraft["bodyType"] })}
+                  stacked
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -144,10 +161,18 @@ export default function OnboardingPage({ onComplete }: { onComplete: (profile: N
                 <span>Objectif</span>
                 <span>{GOAL_MODE_OPTIONS.find((o) => o.value === draft.goalMode)?.label}</span>
               </li>
+              {draft.goalMode === "elite" && (
+                <li onClick={() => setStep(6)}>
+                  <span>Morphologie</span>
+                  <span>{getBodyTypeOptions(draft.sex).find((o) => o.value === draft.bodyType)?.label ?? "—"}</span>
+                </li>
+              )}
             </ul>
 
             <NutritionTargetsSummary
               goalMode={draft.goalMode}
+              bodyType={draft.bodyType}
+              sex={draft.sex}
               targets={calculateNutritionTargets(draft)}
               activityLevel={draft.activityLevel}
             />

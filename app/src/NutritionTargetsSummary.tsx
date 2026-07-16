@@ -1,6 +1,6 @@
 import type { ChoiceOption } from "./ChoiceCards.js";
-import type { GoalMode, NutritionTargets } from "./nutritionCalculator.js";
-import { ACTIVITY_MULTIPLIERS } from "./nutritionCalculator.js";
+import type { BodyType, GoalMode, NutritionTargets, Sex } from "./nutritionCalculator.js";
+import BodySilhouette from "./BodySilhouette.js";
 
 export const GOAL_MODE_OPTIONS: ChoiceOption[] = [
   {
@@ -11,9 +11,15 @@ export const GOAL_MODE_OPTIONS: ChoiceOption[] = [
   },
   {
     value: "ligne",
-    label: "Garder la ligne",
-    description: "Léger déficit pour rester affûté, plus de marge.",
+    label: "Rester en forme",
+    description: "Déficit modéré, protéines élevées pour préserver le muscle.",
     badge: "★★☆ Modérée",
+  },
+  {
+    value: "elite",
+    label: "Mode Élite",
+    description: "Apports optimisés pour un physique ciblé (choisis ta morphologie).",
+    badge: "🏆 Physique ciblé",
   },
   {
     value: "frigo_only",
@@ -22,6 +28,34 @@ export const GOAL_MODE_OPTIONS: ChoiceOption[] = [
     badge: "☆☆☆ Aucune pression",
   },
 ];
+
+const BODY_TYPE_LABELS: Record<Sex, Record<BodyType, { label: string; description: string }>> = {
+  homme: {
+    endurance: { label: "Coureur / Élancé", description: "Corps sec, endurance, glucides élevés." },
+    athletic: { label: "Athlétique équilibré", description: "Musclé et défini, léger surplus." },
+    mass: { label: "Bodybuilder / Masse max", description: "Surplus calorique, développement musculaire maximal." },
+  },
+  femme: {
+    endurance: { label: "Coureuse / Élancée", description: "Corps sec, endurance, glucides élevés." },
+    athletic: { label: "Tonique équilibrée", description: "Musclée et définie, léger surplus." },
+    mass: { label: "Fitness galbée / Masse max", description: "Surplus calorique, développement musculaire maximal." },
+  },
+  autre: {
+    endurance: { label: "Élancé(e) / Endurance", description: "Corps sec, endurance, glucides élevés." },
+    athletic: { label: "Athlétique équilibré(e)", description: "Musclé(e) et défini(e), léger surplus." },
+    mass: { label: "Masse musculaire max", description: "Surplus calorique, développement musculaire maximal." },
+  },
+};
+
+export function getBodyTypeOptions(sex: Sex): ChoiceOption[] {
+  const labels = BODY_TYPE_LABELS[sex] ?? BODY_TYPE_LABELS.autre;
+  return (Object.keys(labels) as BodyType[]).map((type) => ({
+    value: type,
+    label: labels[type].label,
+    description: labels[type].description,
+    icon: <BodySilhouette type={type} />,
+  }));
+}
 
 const ACTIVITY_LABELS: Record<string, string> = {
   sedentaire: "sédentaire",
@@ -33,21 +67,54 @@ const ACTIVITY_LABELS: Record<string, string> = {
 
 const GOAL_MODE_LABELS: Record<GoalMode, string> = {
   precision: "Mode Sniper",
-  ligne: "Garder la ligne",
+  ligne: "Rester en forme",
+  elite: "Mode Élite",
   frigo_only: "Mode Libre",
 };
 
+function explanationReason(
+  goalMode: GoalMode,
+  bodyType: BodyType | null | undefined,
+  sex: Sex | undefined,
+  targets: NutritionTargets
+): string {
+  if (goalMode === "ligne") {
+    return "Le déficit est volontairement modéré, avec des protéines élevées (2,2g/kg) pour préserver ta masse musculaire pendant la perte.";
+  }
+  if (goalMode === "elite" && bodyType) {
+    const labels = BODY_TYPE_LABELS[sex ?? "autre"] ?? BODY_TYPE_LABELS.autre;
+    const proteinNote =
+      targets.proteinPerKgUsed >= 2
+        ? "des protéines élevées pour maximiser le développement musculaire"
+        : "des protéines modérées adaptées à l'endurance";
+    return `Les apports sont ajustés pour viser un physique type "${labels[bodyType].label}" : ${proteinNote}.`;
+  }
+  return "Répartition standard : protéines et lipides à des niveaux de référence pour un objectif neutre.";
+}
+
 export default function NutritionTargetsSummary({
   goalMode,
+  bodyType,
+  sex,
   targets,
   activityLevel,
 }: {
   goalMode: GoalMode;
+  bodyType?: BodyType | null;
+  sex?: Sex;
   targets: NutritionTargets | null;
   activityLevel?: string;
 }) {
-  if (!targets || goalMode === "frigo_only") {
+  if (goalMode === "frigo_only") {
     return <p className="nutrition-targets-free">🧊 Pas de suivi calorique — concentre-toi sur ton frigo.</p>;
+  }
+
+  if (goalMode === "elite" && !bodyType) {
+    return <p className="nutrition-targets-free">🏆 Choisis ta morphologie ci-dessous pour voir tes objectifs.</p>;
+  }
+
+  if (!targets) {
+    return null;
   }
 
   return (
@@ -89,10 +156,7 @@ export default function NutritionTargetsSummary({
           Avec le mode <strong>{GOAL_MODE_LABELS[goalMode]}</strong>, ton objectif est de{" "}
           <strong>{targets.targetCalories} kcal</strong> par jour.
         </p>
-        <p>
-          Répartition : 1,8g de protéines par kg de poids corporel, 30% des calories en lipides, le reste en
-          glucides.
-        </p>
+        <p>{explanationReason(goalMode, bodyType, sex, targets)}</p>
       </details>
     </div>
   );

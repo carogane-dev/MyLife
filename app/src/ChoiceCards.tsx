@@ -1,8 +1,11 @@
+import type { ReactNode } from "react";
+
 export interface ChoiceOption {
   value: string;
   label: string;
   description?: string;
   badge?: string;
+  icon?: ReactNode;
 }
 
 interface ChoiceCardsProps {
@@ -22,6 +25,7 @@ export default function ChoiceCards({ options, value, onChange, stacked = false 
           className={`choice-card ${value === option.value ? "active" : ""}`}
           onClick={() => onChange(option.value)}
         >
+          {option.icon}
           {option.badge && <span className="choice-card-badge">{option.badge}</span>}
           <span className="choice-card-label">{option.label}</span>
           {option.description && <span className="choice-card-description">{option.description}</span>}
