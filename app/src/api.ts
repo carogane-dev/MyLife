@@ -229,6 +229,14 @@ export async function getConsumptionEntries(from: string, to: string): Promise<C
   return body.entries;
 }
 
+export async function simulateNewDay(): Promise<{ shifted: number }> {
+  const res = await fetch(`${API_BASE_URL}/api/consumption/simulate-new-day`, {
+    method: "POST",
+    credentials: "include",
+  });
+  return parseJsonOrThrow(res);
+}
+
 export async function getMealSuggestion(
   excludeIds: string[] = [],
   mealsRemaining = 3

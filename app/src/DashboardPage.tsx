@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getConsumptionEntries, getProfile } from "./api.js";
+import { getConsumptionEntries, getProfile, simulateNewDay } from "./api.js";
 import type { ConsumptionEntry, NutritionProfile } from "./api.js";
 import { calculateNutritionTargets } from "./nutritionCalculator.js";
 import DailyProgress, { sumConsumption } from "./DailyProgress.js";
@@ -27,8 +27,9 @@ export default function DashboardPage({ onBack }: { onBack: () => void }) {
   const [todayEntries, setTodayEntries] = useState<ConsumptionEntry[] | null>(null);
   const [weekDays, setWeekDays] = useState<WeekDay[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [simulating, setSimulating] = useState(false);
 
-  useEffect(() => {
+  function load() {
     const today = new Date();
 
     getProfile()
@@ -58,7 +59,22 @@ export default function DashboardPage({ onBack }: { onBack: () => void }) {
         setWeekDays(days);
       })
       .catch(() => {});
-  }, []);
+  }
+
+  useEffect(load, []);
+
+  async function handleSimulateNewDay() {
+    setSimulating(true);
+    setError(null);
+    try {
+      await simulateNewDay();
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Une erreur est survenue.");
+    } finally {
+      setSimulating(false);
+    }
+  }
 
   const targets = profile ? calculateNutritionTargets(profile) : null;
   const todayTotals = todayEntries ? sumConsumption(todayEntries) : null;
@@ -68,7 +84,12 @@ export default function DashboardPage({ onBack }: { onBack: () => void }) {
       <button className="page-back" onClick={onBack}>
         ← Retour
       </button>
-      <h2>📊 Statistiques</h2>
+      <div className="dashboard-header">
+        <h2>📊 Statistiques</h2>
+        <button className="new-day-button" onClick={handleSimulateNewDay} disabled={simulating}>
+          {simulating ? "…" : "🔄 Simuler un nouveau jour"}
+        </button>
+      </div>
 
       {error && <p className="fridge-error">{error}</p>}
 

@@ -976,7 +976,37 @@ body {
 /* Statistiques (tableau de bord) */
 
 .dashboard-page h2 {
-  margin: 0 0 1rem;
+  margin: 0;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.new-day-button {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.new-day-button:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+}
+
+.new-day-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .consumption-log {
