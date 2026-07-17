@@ -75,3 +75,29 @@ consumptionRouter.get("/", requireAuth, async (req, res) => {
 
   res.status(200).json({ entries });
 });
+
+// Outil de test : simule le passage à un nouveau jour en décalant les
+// entrées d'aujourd'hui de 24h dans le passé, plutôt que de les supprimer —
+// elles comptent alors pour "hier" (visibles dans le graphique de la
+// semaine) et le compteur du jour repart à zéro, sans perdre l'historique.
+consumptionRouter.post("/simulate-new-day", requireAuth, async (req, res) => {
+  const dayStart = new Date();
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date();
+  dayEnd.setHours(23, 59, 59, 999);
+
+  const todayEntries = await prisma.consumptionEntry.findMany({
+    where: { userId: req.user!.id, consumedAt: { gte: dayStart, lte: dayEnd } },
+  });
+
+  await Promise.all(
+    todayEntries.map((entry) =>
+      prisma.consumptionEntry.update({
+        where: { id: entry.id },
+        data: { consumedAt: new Date(entry.consumedAt.getTime() - 24 * 60 * 60 * 1000) },
+      })
+    )
+  );
+
+  res.status(200).json({ shifted: todayEntries.length });
+});
