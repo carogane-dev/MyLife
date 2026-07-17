@@ -57,6 +57,43 @@ consumptionRouter.post("/", requireAuth, async (req, res) => {
   res.status(201).json({ entry, itemDeleted });
 });
 
+// Enregistre une consommation sans article de frigo associé (ex. un repas
+// composé à partir d'une recette de la communauté) : les macros sont déjà
+// calculées côté appelant, on se contente de les journaliser.
+consumptionRouter.post("/manual", requireAuth, async (req, res) => {
+  const body = req.body ?? {};
+
+  if (
+    !isNonEmptyString(body.name) ||
+    !isFiniteNumber(body.quantity) ||
+    body.quantity <= 0 ||
+    !isNonEmptyString(body.unit) ||
+    !isFiniteNumber(body.calories) ||
+    !isFiniteNumber(body.protein) ||
+    !isFiniteNumber(body.fat) ||
+    !isFiniteNumber(body.carbs)
+  ) {
+    res.status(400).json({ error: "Nom, quantité et macros requis." });
+    return;
+  }
+
+  const entry = await prisma.consumptionEntry.create({
+    data: {
+      userId: req.user!.id,
+      fridgeItemId: null,
+      name: body.name,
+      quantity: body.quantity,
+      unit: body.unit,
+      calories: Math.round(body.calories),
+      protein: Math.round(body.protein * 10) / 10,
+      fat: Math.round(body.fat * 10) / 10,
+      carbs: Math.round(body.carbs * 10) / 10,
+    },
+  });
+
+  res.status(201).json({ entry });
+});
+
 consumptionRouter.get("/", requireAuth, async (req, res) => {
   const { from, to } = req.query;
 
