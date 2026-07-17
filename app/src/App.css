@@ -1435,3 +1435,39 @@ body {
   grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   gap: 0.6rem;
 }
+
+/* Composeur de repas : bascule frigo/recette */
+
+.meal-source-tabs {
+  display: flex;
+  gap: 0.4rem;
+  background: var(--color-bg);
+  border-radius: 999px;
+  padding: 0.25rem;
+  margin: 1rem 0;
+}
+
+.meal-source-tabs button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.meal-source-tabs button.active {
+  background: var(--color-primary);
+  color: white;
+}
+
+.recipe-match-name {
+  margin: 0 0 0.75rem;
+}
+
+.meal-item-name .recipe-flexible-tag {
+  margin-left: 0.5rem;
+}

@@ -2,6 +2,8 @@ import { Router } from "express";
 import { prisma } from "../db.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { isFiniteNumber, isNonEmptyString } from "../validation.js";
+import { computeDailyBudget, computeMealBudget, isDayComplete, parseMealsRemaining } from "../dailyBudget.js";
+import { findBestRecipeMatch } from "../recipeMatcher.js";
 
 export const recipesRouter = Router();
 
@@ -140,6 +142,44 @@ recipesRouter.get("/", requireAuth, async (req, res) => {
   });
 
   res.status(200).json({ recipes: enriched });
+});
+
+// Suggère la recette de la communauté qui, une fois ses ingrédients
+// "libres" ajustés, colle le mieux à ce qu'il reste à atteindre pour ce
+// repas — placé avant "/:id" pour ne pas être intercepté par cette route.
+recipesRouter.get("/suggestion/for-meal", requireAuth, async (req, res) => {
+  const budgetInfo = await computeDailyBudget(req.user!.id);
+  if (!budgetInfo) {
+    res.status(200).json({ match: null, reason: "Profil non configuré ou pas d'objectif calorique dans ce mode." });
+    return;
+  }
+  const { targets, remaining } = budgetInfo;
+
+  if (isDayComplete(remaining, targets)) {
+    res.status(200).json({ match: null, reason: "Objectif du jour déjà atteint sur toutes les macros 🎉" });
+    return;
+  }
+
+  const recipes = await prisma.recipe.findMany({ include: { ingredients: true } });
+  if (recipes.length === 0) {
+    res.status(200).json({ match: null, reason: "Aucune recette disponible pour l'instant." });
+    return;
+  }
+
+  const excludeParam = typeof req.query.exclude === "string" ? req.query.exclude : "";
+  const excludeIds = new Set(excludeParam.split(",").filter(Boolean));
+  const mealsRemaining = parseMealsRemaining(req.query.meals);
+  const dailyTargets = { protein: targets.targetProteinG, fat: targets.targetFatG, carbs: targets.targetCarbsG };
+  const mealBudget = computeMealBudget(remaining, targets, mealsRemaining);
+
+  const match = findBestRecipeMatch(recipes, mealBudget, dailyTargets, excludeIds);
+
+  if (!match) {
+    res.status(200).json({ match: null, reason: "Aucune recette ne correspond pour l'instant." });
+    return;
+  }
+
+  res.status(200).json({ match });
 });
 
 recipesRouter.get("/:id", requireAuth, async (req, res) => {

@@ -220,6 +220,24 @@ export async function markItemEaten(
   return parseJsonOrThrow(res);
 }
 
+export async function logManualConsumption(entry: {
+  name: string;
+  quantity: number;
+  unit: string;
+  calories: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+}): Promise<{ entry: ConsumptionEntry }> {
+  const res = await fetch(`${API_BASE_URL}/api/consumption/manual`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(entry),
+  });
+  return parseJsonOrThrow(res);
+}
+
 export async function getConsumptionEntries(from: string, to: string): Promise<ConsumptionEntry[]> {
   const res = await fetch(
     `${API_BASE_URL}/api/consumption?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
@@ -245,6 +263,38 @@ export async function getMealSuggestion(
   if (excludeIds.length > 0) params.set("exclude", excludeIds.join(","));
   params.set("meals", String(mealsRemaining));
   const res = await fetch(`${API_BASE_URL}/api/meal-suggestion?${params.toString()}`, {
+    method: "GET",
+    credentials: "include",
+  });
+  return parseJsonOrThrow(res);
+}
+
+export interface RecipeMatchIngredient {
+  name: string;
+  displayQuantity: number;
+  displayUnit: string;
+  flexible: boolean;
+  calories: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+}
+
+export interface RecipeMatch {
+  recipeId: string;
+  recipeName: string;
+  ingredients: RecipeMatchIngredient[];
+  totals: { calories: number; protein: number; fat: number; carbs: number };
+}
+
+export async function getRecipeSuggestion(
+  excludeIds: string[] = [],
+  mealsRemaining = 3
+): Promise<{ match: RecipeMatch | null; reason?: string }> {
+  const params = new URLSearchParams();
+  if (excludeIds.length > 0) params.set("exclude", excludeIds.join(","));
+  params.set("meals", String(mealsRemaining));
+  const res = await fetch(`${API_BASE_URL}/api/recipes/suggestion/for-meal?${params.toString()}`, {
     method: "GET",
     credentials: "include",
   });
