@@ -20,6 +20,8 @@ model User {
   fridgeItems        FridgeItem[]
   nutritionProfile   NutritionProfile?
   consumptionEntries ConsumptionEntry[]
+  recipes            Recipe[]
+  recipeLikes        RecipeLike[]
 }
 
 // Profil physiologique nécessaire au calcul futur des besoins caloriques
@@ -124,4 +126,77 @@ model MealEntry {
   aiRawResult Json?    // réponse brute du modèle de vision, pour audit/amélioration
   eatenAt     DateTime @default(now())
   createdAt   DateTime @default(now())
+}
+
+// Base de recettes communautaire : publique, visible et likable par tous
+// les comptes, indépendante du frigo de chacun (sert de bibliothèque
+// d'inspiration/de base pour le composeur de repas, voir RecipeIngredient
+// pour le mécanisme d'ingrédients "libres").
+model Recipe {
+  id           String   @id @default(uuid())
+  author       User     @relation(fields: [authorId], references: [id])
+  authorId     String
+  name         String
+  description  String?
+  instructions String // étapes de préparation, texte libre
+
+  category   String // "Petit-déjeuner" | "Plat" | "Entrée" | "Dessert" | "Snack"
+  healthy    Boolean @default(false) // repas "orienté healthy" pour le tri/filtre
+  difficulty String // "facile" | "moyen" | "difficile"
+
+  prepMinutes Int
+  cookMinutes Int
+  servings    Int // nombre de portions couvertes par les quantités de référence
+
+  ingredients RecipeIngredient[]
+  likes       RecipeLike[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([healthy])
+}
+
+model RecipeIngredient {
+  id       String @id @default(uuid())
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipeId String
+
+  name String // ex. "Blanc de poulet", "Œufs"
+
+  // Quantité/unité montrées à l'utilisateur (ex. "2" / "pièces") séparées du
+  // poids réel utilisé pour les macros (ex. 110g) : évite toute ambiguïté
+  // du type "1 pièce = 1 gramme" déjà rencontrée sur le frigo.
+  displayQuantity Float
+  displayUnit     String
+  referenceGrams  Float
+
+  caloriesPer100g Float
+  proteinPer100g  Float
+  fatPer100g      Float
+  carbsPer100g    Float
+
+  // Ingrédient "libre" : sa quantité peut être ajustée indépendamment (en
+  // plus ou en moins) par le composeur de repas pour coller à l'objectif
+  // nutritionnel, sans dénaturer la recette (ex. poulet, sauce, féculent
+  // d'accompagnement). Les ingrédients non-libres forment le "socle" de la
+  // recette : ils sont toujours mis à l'échelle ENSEMBLE par un même
+  // facteur (les proportions entre eux restent fixes, ex. œufs+lait d'une
+  // omelette), jamais individuellement.
+  flexible Boolean @default(false)
+
+  order Int @default(0)
+}
+
+model RecipeLike {
+  id       String @id @default(uuid())
+  user     User   @relation(fields: [userId], references: [id])
+  userId   String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipeId String
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, recipeId])
 }

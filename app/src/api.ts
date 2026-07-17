@@ -269,3 +269,142 @@ export async function saveProfile(draft: NutritionProfileDraft): Promise<Nutriti
   const body = await parseJsonOrThrow(res);
   return body.profile;
 }
+
+// ===== Recettes =====
+
+export interface RecipeSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  healthy: boolean;
+  difficulty: string;
+  prepMinutes: number;
+  cookMinutes: number;
+  totalMinutes: number;
+  servings: number;
+  ingredientCount: number;
+  likeCount: number;
+  likedByMe: boolean;
+  macrosPerServing: { calories: number; protein: number; fat: number; carbs: number };
+  createdAt: string;
+}
+
+export interface RecipeIngredient {
+  id?: string;
+  name: string;
+  displayQuantity: number;
+  displayUnit: string;
+  referenceGrams: number;
+  caloriesPer100g: number;
+  proteinPer100g: number;
+  fatPer100g: number;
+  carbsPer100g: number;
+  flexible: boolean;
+}
+
+export interface RecipeDetail {
+  id: string;
+  name: string;
+  description: string | null;
+  instructions: string;
+  category: string;
+  healthy: boolean;
+  difficulty: string;
+  prepMinutes: number;
+  cookMinutes: number;
+  totalMinutes: number;
+  servings: number;
+  authorEmail: string;
+  isAuthor: boolean;
+  ingredients: RecipeIngredient[];
+  likeCount: number;
+  likedByMe: boolean;
+  macrosTotal: { calories: number; protein: number; fat: number; carbs: number };
+  macrosPerServing: { calories: number; protein: number; fat: number; carbs: number };
+}
+
+export interface RecipeDraft {
+  name: string;
+  description: string;
+  instructions: string;
+  category: string;
+  healthy: boolean;
+  difficulty: string;
+  prepMinutes: number;
+  cookMinutes: number;
+  servings: number;
+  ingredients: RecipeIngredient[];
+}
+
+export interface RecipeFilters {
+  q?: string;
+  category?: string;
+  healthy?: boolean;
+  difficulty?: string;
+  ingredient?: string;
+  sort?: "likes" | "time" | "recent";
+}
+
+export async function getRecipes(filters: RecipeFilters = {}): Promise<RecipeSummary[]> {
+  const params = new URLSearchParams();
+  if (filters.q) params.set("q", filters.q);
+  if (filters.category) params.set("category", filters.category);
+  if (filters.healthy !== undefined) params.set("healthy", String(filters.healthy));
+  if (filters.difficulty) params.set("difficulty", filters.difficulty);
+  if (filters.ingredient) params.set("ingredient", filters.ingredient);
+  if (filters.sort) params.set("sort", filters.sort);
+  const res = await fetch(`${API_BASE_URL}/api/recipes?${params.toString()}`, {
+    method: "GET",
+    credentials: "include",
+  });
+  const body = await parseJsonOrThrow(res);
+  return body.recipes;
+}
+
+export async function getRecipe(id: string): Promise<RecipeDetail> {
+  const res = await fetch(`${API_BASE_URL}/api/recipes/${encodeURIComponent(id)}`, {
+    method: "GET",
+    credentials: "include",
+  });
+  const body = await parseJsonOrThrow(res);
+  return body.recipe;
+}
+
+export async function createRecipe(draft: RecipeDraft): Promise<{ id: string }> {
+  const res = await fetch(`${API_BASE_URL}/api/recipes`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(draft),
+  });
+  const body = await parseJsonOrThrow(res);
+  return body.recipe;
+}
+
+export async function updateRecipe(id: string, draft: RecipeDraft): Promise<{ id: string }> {
+  const res = await fetch(`${API_BASE_URL}/api/recipes/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(draft),
+  });
+  const body = await parseJsonOrThrow(res);
+  return body.recipe;
+}
+
+export async function deleteRecipe(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/recipes/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  await parseJsonOrThrow(res);
+}
+
+export async function toggleRecipeLike(id: string): Promise<{ liked: boolean; likeCount: number }> {
+  const res = await fetch(`${API_BASE_URL}/api/recipes/${encodeURIComponent(id)}/like`, {
+    method: "POST",
+    credentials: "include",
+  });
+  return parseJsonOrThrow(res);
+}
