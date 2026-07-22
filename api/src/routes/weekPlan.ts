@@ -5,6 +5,7 @@ import { requireAuth } from "../middleware/requireAuth.js";
 import { computeDailyBudget } from "../dailyBudget.js";
 import { generateWeekPlan } from "../weekPlanner.js";
 import type { WeekPlan } from "../weekPlanner.js";
+import { computeAffinityScores } from "../recipeMatcher.js";
 
 export const weekPlanRouter = Router();
 
@@ -37,9 +38,10 @@ async function loadContext(userId: string) {
   const budgetInfo = await computeDailyBudget(userId);
   if (!budgetInfo) return null;
   const { targets, slotContext } = budgetInfo;
-  const [recipes, fridgeItems] = await Promise.all([
+  const [recipes, fridgeItems, decisions] = await Promise.all([
     prisma.recipe.findMany({ include: { ingredients: true } }),
     prisma.fridgeItem.findMany({ where: { userId, quantity: { gt: 0 } } }),
+    prisma.recipeDecision.findMany({ where: { userId }, select: { recipeId: true, accepted: true } }),
   ]);
   const dailyTargets = {
     calories: targets.targetCalories,
@@ -47,7 +49,8 @@ async function loadContext(userId: string) {
     fat: targets.targetFatG,
     carbs: targets.targetCarbsG,
   };
-  return { targets, slotContext, recipes, fridgeItems, dailyTargets };
+  const affinityScores = computeAffinityScores(decisions);
+  return { targets, slotContext, recipes, fridgeItems, dailyTargets, affinityScores };
 }
 
 type WeekPlanContext = Exclude<Awaited<ReturnType<typeof loadContext>>, null>;
@@ -94,7 +97,17 @@ function buildPinnedAssignments(entries: PersistedEntry[], excludeEntryId?: stri
 
 async function createFreshWeekPlan(userId: string, ctx: WeekPlanContext) {
   const startDate = tomorrowMidnight();
-  const plan = generateWeekPlan(ctx.recipes, ctx.fridgeItems, ctx.dailyTargets, ctx.targets, ctx.slotContext, startDate);
+  const plan = generateWeekPlan(
+    ctx.recipes,
+    ctx.fridgeItems,
+    ctx.dailyTargets,
+    ctx.targets,
+    ctx.slotContext,
+    startDate,
+    new Set(),
+    new Map(),
+    ctx.affinityScores
+  );
   return prisma.weekPlan.create({
     data: {
       userId,
@@ -138,7 +151,8 @@ async function hydrate(
     ctx.slotContext,
     planRecord.startDate,
     new Set(),
-    pinnedAssignments
+    pinnedAssignments,
+    ctx.affinityScores
   );
 
   const entryByKey = new Map(planRecord.entries.map((e) => [`${entryDateToIso(e.date)}|${e.slot}`, e]));
@@ -214,7 +228,8 @@ async function rejectAndRegenerateEntry(entry: PersistedEntry, weekPlanId: strin
     ctx.slotContext,
     weekPlanStartDate,
     excludeIds,
-    pinnedAssignments
+    pinnedAssignments,
+    ctx.affinityScores
   );
   const dateStr = entryDateToIso(entry.date);
   const newRecipeId = regenerated.days.find((d) => d.date === dateStr)?.slots.find((s) => s.slot === entry.slot)?.match?.recipeId ?? null;

@@ -183,7 +183,10 @@ export default function MealBuilderPage({ onBack }: { onBack: () => void }) {
 
       {!loading && source === "recipe" && recipeMatch && !eaten && (
         <div className="meal-suggestion">
-          <h3 className="recipe-match-name">{recipeMatch.recipeName}</h3>
+          <h3 className="recipe-match-name">
+            {recipeMatch.recipeName}
+            {recipeMatch.liked && <span className="recipe-badge liked"> ❤️ Souvent accepté</span>}
+          </h3>
           <ul className="meal-item-list">
             {recipeMatch.ingredients.map((item, index) => (
               <li className="meal-item-row" key={`${item.name}-${index}`}>

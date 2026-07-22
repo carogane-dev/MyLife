@@ -219,6 +219,7 @@ export default function WeekPlanPage({ onBack }: { onBack: () => void }) {
                               <span className={assignment.stockCovered ? "recipe-badge healthy" : "recipe-badge"}>
                                 {assignment.stockCovered ? "✅ En stock" : `🛒 À acheter (${assignment.missingIngredients.length})`}
                               </span>
+                              {assignment.match.liked && <span className="recipe-badge liked">❤️ Souvent accepté</span>}
                             </>
                           )}
                           <span className={`week-plan-status-badge week-plan-status-${assignment.status}`}>
@@ -291,7 +292,10 @@ export default function WeekPlanPage({ onBack }: { onBack: () => void }) {
             <p className="week-plan-review-slot">
               {formatDate(current.day.date)} · {SLOT_LABELS[current.slot.slot]}
             </p>
-            <h3>{current.slot.match?.recipeName}</h3>
+            <h3>
+              {current.slot.match?.recipeName}
+              {current.slot.match?.liked && <span className="recipe-badge liked"> ❤️ Souvent accepté</span>}
+            </h3>
             {current.slot.match && (
               <>
                 <p className="meal-suggestion-totals">
