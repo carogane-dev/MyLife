@@ -22,6 +22,8 @@ model User {
   consumptionEntries ConsumptionEntry[]
   recipes            Recipe[]
   recipeLikes        RecipeLike[]
+  weekPlans          WeekPlan[]
+  recipeDecisions    RecipeDecision[]
 }
 
 // Profil physiologique nécessaire au calcul futur des besoins caloriques
@@ -221,8 +223,10 @@ model Recipe {
   // Champ requis (au moins une valeur) à la création/édition.
   compatibleSlots String[] @default([])
 
-  ingredients RecipeIngredient[]
-  likes       RecipeLike[]
+  ingredients     RecipeIngredient[]
+  likes           RecipeLike[]
+  weekPlanEntries WeekPlanEntry[]
+  recipeDecisions RecipeDecision[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -272,4 +276,71 @@ model RecipeLike {
   createdAt DateTime @default(now())
 
   @@unique([userId, recipeId])
+}
+
+// Planning hebdomadaire persisté : un WeekPlan par (utilisateur, semaine de
+// départ), remplace le calcul entièrement sans état de la Phase 2. Une
+// seule ligne active à la fois par utilisateur pour une même semaine
+// (voir @@unique) — la fenêtre de validité (startDate à startDate+7j) est
+// gérée côté application, pas en base.
+model WeekPlan {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  startDate DateTime
+  createdAt DateTime @default(now())
+
+  entries WeekPlanEntry[]
+
+  @@unique([userId, startDate])
+}
+
+// Un repas du planning : le `recipeId` est la seule donnée réellement
+// persistée pour l'affichage (macros, ingrédients adaptés...), toujours
+// recalculée à la volée via generateWeekPlan en épinglant ce recipeId —
+// cohérent avec le reste de l'app qui ne met jamais en cache de valeurs
+// nutritionnelles calculées.
+model WeekPlanEntry {
+  id         String   @id @default(uuid())
+  weekPlan   WeekPlan @relation(fields: [weekPlanId], references: [id], onDelete: Cascade)
+  weekPlanId String
+  date       DateTime
+  slot       String // "petit-dejeuner" | "dejeuner" | "diner"
+
+  recipe   Recipe? @relation(fields: [recipeId], references: [id])
+  recipeId String? // null seulement si épuisé sans qu'aucune recette n'ait jamais été trouvée
+
+  // "proposed" (en attente de décision) | "accepted" | "eaten" | "exhausted"
+  // (5 refus atteints, aucune meilleure alternative — l'utilisateur ajuste
+  // manuellement, cf. spec).
+  status   String @default("proposed")
+  attempts Int    @default(1)
+
+  decisions RecipeDecision[]
+  updatedAt DateTime @updatedAt
+
+  @@unique([weekPlanId, date, slot])
+}
+
+// Journal d'événements (une ligne par décision, y compris les refus
+// successifs sur un même créneau) — pas un état courant, sert de matière
+// première à l'apprentissage des goûts (pondération des futures
+// propositions), non exploité pour l'instant : uniquement journalisé pour
+// ne pas avoir à migrer une seconde fois plus tard.
+model RecipeDecision {
+  id       String @id @default(uuid())
+  user     User   @relation(fields: [userId], references: [id])
+  userId   String
+  recipe   Recipe @relation(fields: [recipeId], references: [id])
+  recipeId String
+
+  weekPlanEntry   WeekPlanEntry? @relation(fields: [weekPlanEntryId], references: [id], onDelete: SetNull)
+  weekPlanEntryId String?
+
+  slot      String
+  accepted  Boolean
+  createdAt DateTime @default(now())
+
+  @@index([recipeId])
+  @@index([weekPlanEntryId])
 }
