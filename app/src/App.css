@@ -924,7 +924,40 @@ body {
 }
 
 .week-plan-regenerate {
+  margin-bottom: 0;
+}
+
+.week-plan-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
   margin-bottom: 1rem;
+}
+
+.week-plan-reset-button {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.week-plan-reset-button.danger {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  margin: 0 0.4rem;
+}
+
+.week-plan-reset-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
 }
 
 .week-plan-days {
@@ -993,6 +1026,127 @@ body {
   margin-top: 1.5rem;
   padding-top: 1rem;
   border-top: 1px solid var(--color-border);
+}
+
+.week-plan-status-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  white-space: nowrap;
+}
+
+.week-plan-status-accepted {
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+  background: #eaf7f0;
+}
+
+.week-plan-status-eaten {
+  border-color: var(--color-primary-dark);
+  color: #fff;
+  background: var(--color-primary-dark);
+}
+
+.week-plan-status-exhausted {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  background: #fbecea;
+}
+
+.week-plan-eat-button {
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+/* Revue carte par carte : accepter/refuser un repas à la fois */
+
+.week-plan-review {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.week-plan-review-exit {
+  align-self: flex-start;
+}
+
+.week-plan-review-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  animation: weekPlanCardEnter 0.25s ease;
+}
+
+.week-plan-review-card.exiting {
+  opacity: 0;
+  transform: translateX(-16px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+@keyframes weekPlanCardEnter {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.week-plan-review-slot {
+  margin: 0 0 0.25rem;
+  text-transform: capitalize;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.week-plan-review-card h3 {
+  margin: 0 0 0.75rem;
+}
+
+.week-plan-review-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.week-plan-review-actions button {
+  flex: 1;
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--color-border);
+}
+
+.week-plan-review-reject {
+  background: var(--color-surface);
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.week-plan-review-accept {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.week-plan-review-attempts-warning {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  color: var(--color-danger);
 }
 
 .settings-saved-note {

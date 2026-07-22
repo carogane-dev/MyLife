@@ -146,7 +146,7 @@ export function matchRecipeToBudget(
     budget = subtractFromBudget(budget, m, floor);
   }
 
-  const totals = matched.reduce(
+  const rawTotals = matched.reduce(
     (acc, i) => ({
       calories: acc.calories + i.calories,
       protein: acc.protein + i.protein,
@@ -155,6 +155,17 @@ export function matchRecipeToBudget(
     }),
     { calories: 0, protein: 0, fat: 0, carbs: 0 }
   );
+  // Arrondi après somme : chaque ingrédient est déjà arrondi individuellement
+  // (macrosFor), mais additionner plusieurs valeurs à 1 décimale en flottant
+  // JS produit des artefacts type 127.80000000000001 — invisible tant que
+  // seul totals.calories (entier) était affiché, mais exposé dès qu'un
+  // écran affiche aussi protein/fat/carbs (revue du planning).
+  const totals = {
+    calories: Math.round(rawTotals.calories),
+    protein: Math.round(rawTotals.protein * 10) / 10,
+    fat: Math.round(rawTotals.fat * 10) / 10,
+    carbs: Math.round(rawTotals.carbs * 10) / 10,
+  };
 
   const deviation = (value: number, target: number) => (target > 0 ? Math.abs(value - target) / target : 0);
   const fitScore =

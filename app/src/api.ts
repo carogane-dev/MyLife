@@ -338,12 +338,17 @@ export interface MissingIngredient {
   grams: number;
 }
 
+export type WeekPlanEntryStatus = "proposed" | "accepted" | "eaten" | "exhausted";
+
 export interface WeekPlanSlotAssignment {
   date: string;
   slot: MealSlot;
   match: RecipeMatch | null;
   stockCovered: boolean;
   missingIngredients: MissingIngredient[];
+  entryId: string;
+  status: WeekPlanEntryStatus;
+  attempts: number;
 }
 
 export interface WeekPlanDay {
@@ -363,34 +368,66 @@ export interface WeekPlan {
   shoppingList: ShoppingListItem[];
 }
 
-export async function getWeekPlan(excludeIds: string[] = []): Promise<{ weekPlan: WeekPlan | null; reason?: string }> {
-  const params = new URLSearchParams();
-  if (excludeIds.length > 0) params.set("exclude", excludeIds.join(","));
-  const res = await fetch(`${API_BASE_URL}/api/week-plan?${params.toString()}`, {
+type WeekPlanResult = { weekPlan: WeekPlan | null; reason?: string };
+
+// Récupère le planning persisté en cours de l'utilisateur (le crée s'il
+// n'en a pas encore, ou si celui qu'il avait porte sur une semaine déjà
+// entièrement passée) — les décisions accepter/refuser/manger survivent
+// donc à un rechargement de page.
+export async function getWeekPlan(): Promise<WeekPlanResult> {
+  const res = await fetch(`${API_BASE_URL}/api/week-plan`, {
     method: "GET",
     credentials: "include",
   });
   return parseJsonOrThrow(res);
 }
 
-export interface PinnedAssignment {
-  date: string;
-  slot: MealSlot;
-  recipeId: string;
-}
-
-// Régénère un sous-ensemble ciblé du planning (un repas ou un jour entier) :
-// `pinned` liste tout ce qui doit rester identique, `exclude` évite de
-// retomber sur la/les même(s) recette(s) pour les créneaux régénérés.
-export async function regenerateWeekPlan(
-  pinned: PinnedAssignment[],
-  excludeIds: string[] = []
-): Promise<{ weekPlan: WeekPlan | null; reason?: string }> {
-  const res = await fetch(`${API_BASE_URL}/api/week-plan/regenerate`, {
+// Accepte la recette actuellement proposée pour ce créneau.
+export async function acceptWeekPlanEntry(entryId: string): Promise<WeekPlanResult> {
+  const res = await fetch(`${API_BASE_URL}/api/week-plan/entries/${encodeURIComponent(entryId)}/accept`, {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ pinned, exclude: excludeIds }),
+  });
+  return parseJsonOrThrow(res);
+}
+
+// Refuse la recette actuellement proposée pour ce créneau : régénère une
+// alternative (jamais déjà refusée pour ce créneau), ou passe le créneau à
+// "exhausted" après 5 refus.
+export async function rejectWeekPlanEntry(entryId: string): Promise<WeekPlanResult> {
+  const res = await fetch(`${API_BASE_URL}/api/week-plan/entries/${encodeURIComponent(entryId)}/reject`, {
+    method: "POST",
+    credentials: "include",
+  });
+  return parseJsonOrThrow(res);
+}
+
+// Marque un créneau accepté/épuisé comme mangé — le front doit d'abord
+// journaliser la consommation elle-même via logManualConsumption.
+export async function markWeekPlanEntryEaten(entryId: string): Promise<WeekPlanResult> {
+  const res = await fetch(`${API_BASE_URL}/api/week-plan/entries/${encodeURIComponent(entryId)}/mark-eaten`, {
+    method: "POST",
+    credentials: "include",
+  });
+  return parseJsonOrThrow(res);
+}
+
+// Applique la même logique que le refus à tous les créneaux encore
+// "proposed" de ce jour (ignore les créneaux déjà acceptés/mangés/épuisés).
+export async function regenerateWeekPlanDay(date: string): Promise<WeekPlanResult> {
+  const res = await fetch(`${API_BASE_URL}/api/week-plan/days/${encodeURIComponent(date)}/regenerate-remaining`, {
+    method: "POST",
+    credentials: "include",
+  });
+  return parseJsonOrThrow(res);
+}
+
+// Supprime le planning courant et en régénère un frais (les décisions déjà
+// journalisées sont conservées pour l'apprentissage futur des goûts).
+export async function resetWeekPlan(): Promise<WeekPlanResult> {
+  const res = await fetch(`${API_BASE_URL}/api/week-plan/reset`, {
+    method: "POST",
+    credentials: "include",
   });
   return parseJsonOrThrow(res);
 }
