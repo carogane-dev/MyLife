@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getConsumptionEntries, getProfile, simulateNewDay } from "./api.js";
 import type { ConsumptionEntry, NutritionProfile } from "./api.js";
 import { calculateNutritionTargets } from "./nutritionCalculator.js";
+import { useNutritionConfig } from "./useNutritionConfig.js";
 import DailyProgress, { sumConsumption } from "./DailyProgress.js";
 
 function dayStart(d: Date): Date {
@@ -28,6 +29,7 @@ export default function DashboardPage({ onBack }: { onBack: () => void }) {
   const [weekDays, setWeekDays] = useState<WeekDay[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [simulating, setSimulating] = useState(false);
+  const { modeConfigs } = useNutritionConfig();
 
   function load() {
     const today = new Date();
@@ -76,7 +78,7 @@ export default function DashboardPage({ onBack }: { onBack: () => void }) {
     }
   }
 
-  const targets = profile ? calculateNutritionTargets(profile) : null;
+  const targets = profile ? calculateNutritionTargets(profile, modeConfigs) : null;
   const todayTotals = todayEntries ? sumConsumption(todayEntries) : null;
 
   return (

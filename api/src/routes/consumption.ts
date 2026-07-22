@@ -3,6 +3,7 @@ import { prisma } from "../db.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { isFiniteNumber, isNonEmptyString, isValidDateString } from "../validation.js";
 import { quantityToGrams } from "../unitConversion.js";
+import { isMealSlot } from "../mealSlots.js";
 
 export const consumptionRouter = Router();
 
@@ -42,6 +43,7 @@ consumptionRouter.post("/", requireAuth, async (req, res) => {
       protein: Math.round(item.proteinPer100g * ratio * 10) / 10,
       fat: Math.round(item.fatPer100g * ratio * 10) / 10,
       carbs: Math.round(item.carbsPer100g * ratio * 10) / 10,
+      mealSlot: isMealSlot(body.mealSlot) ? body.mealSlot : null,
     },
   });
 
@@ -88,6 +90,7 @@ consumptionRouter.post("/manual", requireAuth, async (req, res) => {
       protein: Math.round(body.protein * 10) / 10,
       fat: Math.round(body.fat * 10) / 10,
       carbs: Math.round(body.carbs * 10) / 10,
+      mealSlot: isMealSlot(body.mealSlot) ? body.mealSlot : null,
     },
   });
 

@@ -29,7 +29,20 @@ export interface NutritionTargets {
   fatPercentUsed: number;
 }
 
-interface ModeConfig {
+export interface ModeConfig {
+  calorieMultiplier: number;
+  proteinPerKg: number;
+  fatPercent: number;
+}
+
+// Représente une ligne NutritionModeConfig telle que chargée depuis la base
+// (voir dailyBudget.loadModeConfigs côté backend). Ces valeurs vivent en
+// base plutôt qu'en constantes ici pour être ajustables sans déploiement de
+// code — voir api/prisma/schema.prisma pour leur justification (AMDR/ISSN
+// ou choix produit assumé, documenté par le champ `source`).
+export interface NutritionModeConfigEntry {
+  goalMode: string;
+  bodyType: string | null;
   calorieMultiplier: number;
   proteinPerKg: number;
   fatPercent: number;
@@ -43,25 +56,18 @@ export const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
   tres_actif: 1.9,
 };
 
-// "elite" et "frigo_only" ne sont pas ici : "elite" utilise BODY_TYPE_CONFIGS,
-// "frigo_only" ne calcule jamais de cible.
-const GOAL_MODE_CONFIGS: Partial<Record<GoalMode, ModeConfig>> = {
-  // Suivi souple : proche du TDEE, protéines à un niveau facile à
-  // atteindre sans être pointilleux.
-  chill: { calorieMultiplier: 1.0, proteinPerKg: 1.6, fatPercent: 0.3 },
-  // Déficit modéré (15%) + protéines élevées pour préserver le muscle
-  // pendant la perte de poids.
-  ligne: { calorieMultiplier: 0.85, proteinPerKg: 2.2, fatPercent: 0.25 },
-};
-
-// Mode Élite : déficit plus marqué que "Rester en forme" et protéines
-// poussées au maximum réaliste, pour un physique sec et musclé — quelle
-// que soit la morphologie visée, l'objectif reste "pointu".
-export const BODY_TYPE_CONFIGS: Record<BodyType, ModeConfig> = {
-  endurance: { calorieMultiplier: 0.83, proteinPerKg: 1.8, fatPercent: 0.22 },
-  athletic: { calorieMultiplier: 0.8, proteinPerKg: 2.2, fatPercent: 0.22 },
-  mass: { calorieMultiplier: 0.78, proteinPerKg: 2.4, fatPercent: 0.2 },
-};
+// "elite" cherche par (goalMode, bodyType) ; les autres modes par (goalMode, null).
+function findModeConfig(
+  configs: NutritionModeConfigEntry[],
+  goalMode: GoalMode,
+  bodyType: BodyType | null | undefined
+): ModeConfig | undefined {
+  if (goalMode === "elite") {
+    if (!bodyType) return undefined; // morphologie pas encore choisie
+    return configs.find((c) => c.goalMode === "elite" && c.bodyType === bodyType);
+  }
+  return configs.find((c) => c.goalMode === goalMode && c.bodyType === null);
+}
 
 // Constante de sexe dans la formule de Mifflin-St Jeor ; pour "autre", on
 // prend la moyenne des deux constantes (+5 et -161) faute de troisième
@@ -73,16 +79,14 @@ function sexConstant(sex: Sex): number {
   return (5 + -161) / 2;
 }
 
-export function calculateNutritionTargets(input: NutritionCalculatorInput): NutritionTargets | null {
+export function calculateNutritionTargets(
+  input: NutritionCalculatorInput,
+  modeConfigs: NutritionModeConfigEntry[]
+): NutritionTargets | null {
   if (input.goalMode === "frigo_only") return null;
+  if (input.goalMode === "elite" && !input.bodyType) return null; // morphologie pas encore choisie
 
-  let config: ModeConfig | undefined;
-  if (input.goalMode === "elite") {
-    if (!input.bodyType) return null; // morphologie pas encore choisie
-    config = BODY_TYPE_CONFIGS[input.bodyType];
-  } else {
-    config = GOAL_MODE_CONFIGS[input.goalMode];
-  }
+  const config = findModeConfig(modeConfigs, input.goalMode, input.bodyType);
   if (!config) return null;
 
   const bmr = 10 * input.weightKg + 6.25 * input.heightCm - 5 * input.age + sexConstant(input.sex);

@@ -1,11 +1,28 @@
 import { useEffect, useState } from "react";
 import { getMealSuggestion, markItemEaten, getRecipeSuggestion, logManualConsumption } from "./api.js";
-import type { MealSuggestion, RecipeMatch } from "./api.js";
+import type { MealSlot, MealSuggestion, RecipeMatch } from "./api.js";
 
 type Source = "fridge" | "recipe";
 
+const SLOT_LABELS: Record<MealSlot, string> = {
+  "petit-dejeuner": "🌅 Petit-déjeuner",
+  dejeuner: "☀️ Déjeuner",
+  diner: "🌙 Dîner",
+};
+
+// Créneau suggéré par défaut selon l'heure locale du navigateur — seuils
+// arbitraires (pas un repère scientifique), l'utilisateur peut toujours
+// changer avant de générer une suggestion.
+function defaultSlotFromHour(): MealSlot {
+  const hour = new Date().getHours();
+  if (hour < 11) return "petit-dejeuner";
+  if (hour < 16) return "dejeuner";
+  return "diner";
+}
+
 export default function MealBuilderPage({ onBack }: { onBack: () => void }) {
   const [source, setSource] = useState<Source>("fridge");
+  const [slot, setSlot] = useState<MealSlot>(defaultSlotFromHour);
   const [suggestion, setSuggestion] = useState<MealSuggestion | null>(null);
   const [recipeMatch, setRecipeMatch] = useState<RecipeMatch | null>(null);
   const [reason, setReason] = useState<string | null>(null);
@@ -13,14 +30,16 @@ export default function MealBuilderPage({ onBack }: { onBack: () => void }) {
   const [eating, setEating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [eaten, setEaten] = useState(false);
-  const [mealsRemaining, setMealsRemaining] = useState(3);
+  const [mealsRemaining, setMealsRemaining] = useState(1);
 
-  function load(currentSource: Source, excludeIds: string[] = [], meals = mealsRemaining) {
+  function load(currentSource: Source, currentSlot: MealSlot, excludeIds: string[] = [], meals = mealsRemaining) {
     setLoading(true);
     setError(null);
     setEaten(false);
     const request =
-      currentSource === "fridge" ? getMealSuggestion(excludeIds, meals) : getRecipeSuggestion(excludeIds, meals);
+      currentSource === "fridge"
+        ? getMealSuggestion(excludeIds, currentSlot, meals)
+        : getRecipeSuggestion(excludeIds, currentSlot, meals);
     request
       .then((result) => {
         if (currentSource === "fridge") {
@@ -36,20 +55,28 @@ export default function MealBuilderPage({ onBack }: { onBack: () => void }) {
       .finally(() => setLoading(false));
   }
 
-  useEffect(() => load(source), []);
+  useEffect(() => load(source, slot), []);
 
   function changeSource(next: Source) {
     if (next === source) return;
     setSource(next);
     setSuggestion(null);
     setRecipeMatch(null);
-    load(next, []);
+    load(next, slot, []);
+  }
+
+  function changeSlot(next: MealSlot) {
+    if (next === slot) return;
+    setSlot(next);
+    setSuggestion(null);
+    setRecipeMatch(null);
+    load(source, next, []);
   }
 
   function changeMealsRemaining(value: number) {
     const clamped = Math.min(6, Math.max(1, value));
     setMealsRemaining(clamped);
-    load(source, [], clamped);
+    load(source, slot, [], clamped);
   }
 
   async function handleEat() {
@@ -58,18 +85,21 @@ export default function MealBuilderPage({ onBack }: { onBack: () => void }) {
     try {
       if (source === "fridge" && suggestion) {
         for (const item of suggestion.items) {
-          await markItemEaten(item.fridgeItemId, item.quantity);
+          await markItemEaten(item.fridgeItemId, item.quantity, slot);
         }
       } else if (source === "recipe" && recipeMatch) {
-        await logManualConsumption({
-          name: recipeMatch.recipeName,
-          quantity: 1,
-          unit: "portion",
-          calories: recipeMatch.totals.calories,
-          protein: recipeMatch.totals.protein,
-          fat: recipeMatch.totals.fat,
-          carbs: recipeMatch.totals.carbs,
-        });
+        await logManualConsumption(
+          {
+            name: recipeMatch.recipeName,
+            quantity: 1,
+            unit: "portion",
+            calories: recipeMatch.totals.calories,
+            protein: recipeMatch.totals.protein,
+            fat: recipeMatch.totals.fat,
+            carbs: recipeMatch.totals.carbs,
+          },
+          slot
+        );
       }
       setEaten(true);
     } catch (err) {
@@ -81,9 +111,9 @@ export default function MealBuilderPage({ onBack }: { onBack: () => void }) {
 
   function regenerate() {
     if (source === "fridge" && suggestion) {
-      load(source, suggestion.items.map((i) => i.fridgeItemId));
+      load(source, slot, suggestion.items.map((i) => i.fridgeItemId));
     } else if (source === "recipe" && recipeMatch) {
-      load(source, [recipeMatch.recipeId]);
+      load(source, slot, [recipeMatch.recipeId]);
     }
   }
 
@@ -98,6 +128,14 @@ export default function MealBuilderPage({ onBack }: { onBack: () => void }) {
       <h2>🍳 Composer un repas</h2>
       <p className="wizard-hint">Une suggestion basée sur {source === "fridge" ? "ton frigo" : "les recettes de la communauté"} et ce qu'il te reste à atteindre aujourd'hui.</p>
 
+      <div className="meal-slot-tabs">
+        {(Object.keys(SLOT_LABELS) as MealSlot[]).map((s) => (
+          <button key={s} className={slot === s ? "active" : ""} onClick={() => changeSlot(s)}>
+            {SLOT_LABELS[s]}
+          </button>
+        ))}
+      </div>
+
       <div className="meal-source-tabs">
         <button className={source === "fridge" ? "active" : ""} onClick={() => changeSource("fridge")}>
           🧊 Depuis mon frigo
@@ -108,7 +146,7 @@ export default function MealBuilderPage({ onBack }: { onBack: () => void }) {
       </div>
 
       <div className="meals-remaining-control">
-        <span>Repas restants aujourd'hui (dont celui-ci) :</span>
+        <span>Repas sur ce créneau (dont celui-ci) :</span>
         <div className="meals-remaining-stepper">
           <button onClick={() => changeMealsRemaining(mealsRemaining - 1)} disabled={mealsRemaining <= 1 || loading}>
             −

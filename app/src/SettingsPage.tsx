@@ -5,6 +5,7 @@ import SliderInput from "./SliderInput.js";
 import ChoiceCards from "./ChoiceCards.js";
 import NutritionTargetsSummary, { GOAL_MODE_OPTIONS, getBodyTypeOptions } from "./NutritionTargetsSummary.js";
 import { calculateNutritionTargets } from "./nutritionCalculator.js";
+import { useNutritionConfig } from "./useNutritionConfig.js";
 
 const SEX_OPTIONS = [
   { value: "homme", label: "Homme" },
@@ -27,6 +28,7 @@ export default function SettingsPage({ onBack }: { onBack: () => void }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const { modeConfigs } = useNutritionConfig();
 
   useEffect(() => {
     getProfile()
@@ -52,7 +54,7 @@ export default function SettingsPage({ onBack }: { onBack: () => void }) {
     setDraft((d) => {
       if (!d) return d;
       const next = { ...d, ...patch };
-      setTargets(calculateNutritionTargets(next));
+      setTargets(calculateNutritionTargets(next, modeConfigs));
       return next;
     });
     setSaved(false);

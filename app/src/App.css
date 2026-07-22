@@ -908,6 +908,13 @@ body {
   margin-top: 1.25rem;
 }
 
+.nutrition-targets-disclaimer {
+  margin-top: 0.6rem;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
 .settings-saved-note {
   margin: 0;
   color: var(--color-primary-dark);
@@ -1438,6 +1445,7 @@ body {
 
 /* Composeur de repas : bascule frigo/recette */
 
+.meal-slot-tabs,
 .meal-source-tabs {
   display: flex;
   gap: 0.4rem;
@@ -1447,6 +1455,7 @@ body {
   margin: 1rem 0;
 }
 
+.meal-slot-tabs button,
 .meal-source-tabs button {
   flex: 1;
   border: none;
@@ -1459,9 +1468,27 @@ body {
   cursor: pointer;
 }
 
+.meal-slot-tabs button.active,
 .meal-source-tabs button.active {
   background: var(--color-primary);
   color: white;
+}
+
+.recipe-slot-fieldset {
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin: 0.25rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.recipe-slot-fieldset legend {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  padding: 0 0.3rem;
 }
 
 .recipe-match-name {

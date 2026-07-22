@@ -5,10 +5,22 @@ import { fetchOffProduct, OffLookupError } from "../offClient.js";
 import { deriveCategory } from "../categoryMapping.js";
 import { resolveNutrition } from "../nutritionDefaults.js";
 import { isFiniteNumber, isNonEmptyString, isValidDateString } from "../validation.js";
+import { isMealSlot, MEAL_SLOTS } from "../mealSlots.js";
 
 export const fridgeRouter = Router();
 
 const BARCODE_RE = /^\d{8,14}$/;
+
+// Créneaux compatibles fournis par l'app si connus (ex. formulaire manuel),
+// sinon permissif (les 3 créneaux) — cohérent avec le comportement d'avant
+// l'introduction des créneaux, où tout article était utilisable à tout
+// moment.
+function resolveCompatibleSlots(body: Record<string, unknown>): string[] {
+  if (Array.isArray(body.compatibleSlots) && body.compatibleSlots.length > 0 && body.compatibleSlots.every(isMealSlot)) {
+    return body.compatibleSlots;
+  }
+  return MEAL_SLOTS;
+}
 
 function isValidFridgeItemBody(body: Record<string, unknown>): boolean {
   return (
@@ -98,6 +110,7 @@ fridgeRouter.post("/", requireAuth, async (req, res) => {
       unit: body.unit,
       barcode: isNonEmptyString(body.barcode) ? body.barcode : null,
       unitWeightGrams: isFiniteNumber(body.unitWeightGrams) && body.unitWeightGrams > 0 ? body.unitWeightGrams : null,
+      compatibleSlots: resolveCompatibleSlots(body),
       caloriesPer100g: body.caloriesPer100g,
       proteinPer100g: body.proteinPer100g,
       fatPer100g: body.fatPer100g,
@@ -136,6 +149,7 @@ fridgeRouter.put("/:id", requireAuth, async (req, res) => {
       unit: body.unit,
       barcode: isNonEmptyString(body.barcode) ? body.barcode : null,
       unitWeightGrams: isFiniteNumber(body.unitWeightGrams) && body.unitWeightGrams > 0 ? body.unitWeightGrams : null,
+      compatibleSlots: resolveCompatibleSlots(body),
       caloriesPer100g: body.caloriesPer100g,
       proteinPer100g: body.proteinPer100g,
       fatPer100g: body.fatPer100g,

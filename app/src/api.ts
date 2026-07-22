@@ -1,4 +1,4 @@
-import type { NutritionTargets } from "./nutritionCalculator.js";
+import type { NutritionModeConfigEntry, NutritionTargets } from "./nutritionCalculator.js";
 
 // Chemin relatif : passe par le proxy Vite (voir vite.config.ts) qui redirige
 // /api vers le back-end. Fonctionne pareil en local, sur le réseau local
@@ -20,6 +20,7 @@ export interface FridgeItem {
   unit: string;
   barcode: string | null;
   unitWeightGrams: number | null;
+  compatibleSlots: MealSlot[];
   expiresAt: string;
   caloriesPer100g: number;
   proteinPer100g: number;
@@ -59,7 +60,27 @@ export interface MealSuggestion {
   totals: { calories: number; protein: number; fat: number; carbs: number };
 }
 
-export type { NutritionTargets } from "./nutritionCalculator.js";
+export type { NutritionTargets, NutritionModeConfigEntry } from "./nutritionCalculator.js";
+
+// Miroir de api/src/mealSlots.ts : le créneau est toujours choisi par
+// l'utilisateur côté front (pré-sélectionné selon l'heure locale), jamais
+// déduit côté serveur.
+export type MealSlot = "petit-dejeuner" | "dejeuner" | "diner";
+export const MEAL_SLOTS: MealSlot[] = ["petit-dejeuner", "dejeuner", "diner"];
+
+export interface NutritionBenchmark {
+  carbPercentMin: number;
+  carbPercentMax: number;
+  fatPercentMin: number;
+  fatPercentMax: number;
+  proteinPercentMin: number;
+  proteinPercentMax: number;
+  issnProteinPerKgMin: number;
+  issnProteinPerKgMax: number;
+  defaultBreakfastPercent: number;
+  defaultLunchPercent: number;
+  defaultDinnerPercent: number;
+}
 
 export interface NutritionProfile {
   id: string;
@@ -92,6 +113,7 @@ export interface FridgeItemDraft {
   quantity: number;
   unit: string;
   unitWeightGrams: number | null;
+  compatibleSlots?: MealSlot[];
   expiresAt: string | null;
   caloriesPer100g: number;
   proteinPer100g: number;
@@ -209,31 +231,35 @@ export async function deleteFridgeItem(id: string): Promise<void> {
 
 export async function markItemEaten(
   fridgeItemId: string,
-  quantity: number
+  quantity: number,
+  mealSlot?: MealSlot
 ): Promise<{ entry: ConsumptionEntry; itemDeleted: boolean }> {
   const res = await fetch(`${API_BASE_URL}/api/consumption`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fridgeItemId, quantity }),
+    body: JSON.stringify({ fridgeItemId, quantity, mealSlot }),
   });
   return parseJsonOrThrow(res);
 }
 
-export async function logManualConsumption(entry: {
-  name: string;
-  quantity: number;
-  unit: string;
-  calories: number;
-  protein: number;
-  fat: number;
-  carbs: number;
-}): Promise<{ entry: ConsumptionEntry }> {
+export async function logManualConsumption(
+  entry: {
+    name: string;
+    quantity: number;
+    unit: string;
+    calories: number;
+    protein: number;
+    fat: number;
+    carbs: number;
+  },
+  mealSlot?: MealSlot
+): Promise<{ entry: ConsumptionEntry }> {
   const res = await fetch(`${API_BASE_URL}/api/consumption/manual`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(entry),
+    body: JSON.stringify({ ...entry, mealSlot }),
   });
   return parseJsonOrThrow(res);
 }
@@ -257,10 +283,12 @@ export async function simulateNewDay(): Promise<{ shifted: number }> {
 
 export async function getMealSuggestion(
   excludeIds: string[] = [],
+  slot: MealSlot = "dejeuner",
   mealsRemaining = 3
 ): Promise<{ suggestion: MealSuggestion | null; reason?: string }> {
   const params = new URLSearchParams();
   if (excludeIds.length > 0) params.set("exclude", excludeIds.join(","));
+  params.set("slot", slot);
   params.set("meals", String(mealsRemaining));
   const res = await fetch(`${API_BASE_URL}/api/meal-suggestion?${params.toString()}`, {
     method: "GET",
@@ -289,10 +317,12 @@ export interface RecipeMatch {
 
 export async function getRecipeSuggestion(
   excludeIds: string[] = [],
+  slot: MealSlot = "dejeuner",
   mealsRemaining = 3
 ): Promise<{ match: RecipeMatch | null; reason?: string }> {
   const params = new URLSearchParams();
   if (excludeIds.length > 0) params.set("exclude", excludeIds.join(","));
+  params.set("slot", slot);
   params.set("meals", String(mealsRemaining));
   const res = await fetch(`${API_BASE_URL}/api/recipes/suggestion/for-meal?${params.toString()}`, {
     method: "GET",
@@ -303,6 +333,14 @@ export async function getRecipeSuggestion(
 
 export async function getProfile(): Promise<{ profile: NutritionProfile | null; targets: NutritionTargets | null }> {
   const res = await fetch(`${API_BASE_URL}/api/profile`, {
+    method: "GET",
+    credentials: "include",
+  });
+  return parseJsonOrThrow(res);
+}
+
+export async function getNutritionConfig(): Promise<{ modeConfigs: NutritionModeConfigEntry[]; benchmark: NutritionBenchmark }> {
+  const res = await fetch(`${API_BASE_URL}/api/nutrition-config`, {
     method: "GET",
     credentials: "include",
   });
@@ -333,6 +371,7 @@ export interface RecipeSummary {
   cookMinutes: number;
   totalMinutes: number;
   servings: number;
+  compatibleSlots: MealSlot[];
   ingredientCount: number;
   likeCount: number;
   likedByMe: boolean;
@@ -365,6 +404,7 @@ export interface RecipeDetail {
   cookMinutes: number;
   totalMinutes: number;
   servings: number;
+  compatibleSlots: MealSlot[];
   authorEmail: string;
   isAuthor: boolean;
   ingredients: RecipeIngredient[];
@@ -384,6 +424,7 @@ export interface RecipeDraft {
   prepMinutes: number;
   cookMinutes: number;
   servings: number;
+  compatibleSlots: MealSlot[];
   ingredients: RecipeIngredient[];
 }
 
