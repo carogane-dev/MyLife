@@ -79,7 +79,7 @@ function dominantMacro(ingredient: RecipeIngredientInput): "protein" | "fat" | "
 export function matchRecipeToBudget(
   recipe: RecipeInput,
   mealBudget: MacroAmounts,
-  dailyTargets: { protein: number; fat: number; carbs: number }
+  dailyTargets: { calories: number; protein: number; fat: number; carbs: number }
 ): RecipeMatch {
   const floor: MacroBudget = computeFloor(dailyTargets);
 
@@ -109,6 +109,7 @@ export function matchRecipeToBudget(
   );
 
   let budget: MacroBudget = {
+    calories: Math.max(mealBudget.calories - fixedTotals.calories, floor.calories),
     protein: Math.max(mealBudget.protein - fixedTotals.protein, floor.protein),
     fat: Math.max(mealBudget.fat - fixedTotals.fat, floor.fat),
     carbs: Math.max(mealBudget.carbs - fixedTotals.carbs, floor.carbs),
@@ -157,6 +158,7 @@ export function matchRecipeToBudget(
 
   const deviation = (value: number, target: number) => (target > 0 ? Math.abs(value - target) / target : 0);
   const fitScore =
+    deviation(totals.calories, mealBudget.calories) +
     deviation(totals.protein, mealBudget.protein) +
     deviation(totals.fat, mealBudget.fat) +
     deviation(totals.carbs, mealBudget.carbs);
@@ -171,7 +173,7 @@ export function matchRecipeToBudget(
 export function findBestRecipeMatch(
   recipes: RecipeInput[],
   mealBudget: MacroAmounts,
-  dailyTargets: { protein: number; fat: number; carbs: number },
+  dailyTargets: { calories: number; protein: number; fat: number; carbs: number },
   slot: MealSlot,
   excludeIds: Set<string> = new Set()
 ): RecipeMatch | null {

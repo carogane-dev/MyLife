@@ -933,6 +933,13 @@ body {
   gap: 1rem;
 }
 
+.week-plan-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
 .week-plan-day-title {
   margin: 0 0 0.4rem;
   text-transform: capitalize;
@@ -940,8 +947,52 @@ body {
 }
 
 .week-plan-slot-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.3rem;
+}
+
+.week-plan-slot-main {
+  display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: 0.4rem;
+}
+
+.week-plan-slot-main .meal-item-name {
+  flex: 1;
+}
+
+.week-plan-mini-regen {
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.week-plan-missing-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 0.75rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.week-plan-missing-total {
+  color: var(--color-text-muted);
+  opacity: 0.65;
+}
+
+.week-plan-shopping-list {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
 }
 
 .settings-saved-note {
