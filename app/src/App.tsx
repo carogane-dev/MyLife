@@ -12,6 +12,7 @@ import MealBuilderPage from "./MealBuilderPage.js";
 import RecipesPage from "./RecipesPage.js";
 import WeekPlanPage from "./WeekPlanPage.js";
 import ScientificDataPage from "./ScientificDataPage.js";
+import GamificationSummary from "./GamificationSummary.js";
 import "./App.css";
 
 type ConnectionState = "checking" | "connected" | "error";
@@ -202,6 +203,7 @@ export default function App() {
           </section>
 
           {profile.goalMode !== "frigo_only" && <HomeProgress profile={profile} />}
+          <GamificationSummary />
 
           <section className="feature-grid">
             {FEATURES.map((feature) => (
