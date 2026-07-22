@@ -331,6 +331,34 @@ export async function getRecipeSuggestion(
   return parseJsonOrThrow(res);
 }
 
+export interface WeekPlanSlotAssignment {
+  date: string;
+  slot: MealSlot;
+  match: RecipeMatch | null;
+  stockCovered: boolean;
+  missingIngredients: string[];
+}
+
+export interface WeekPlanDay {
+  date: string;
+  slots: WeekPlanSlotAssignment[];
+}
+
+export interface WeekPlan {
+  days: WeekPlanDay[];
+  coverage: { total: number; covered: number };
+}
+
+export async function getWeekPlan(excludeIds: string[] = []): Promise<{ weekPlan: WeekPlan | null; reason?: string }> {
+  const params = new URLSearchParams();
+  if (excludeIds.length > 0) params.set("exclude", excludeIds.join(","));
+  const res = await fetch(`${API_BASE_URL}/api/week-plan?${params.toString()}`, {
+    method: "GET",
+    credentials: "include",
+  });
+  return parseJsonOrThrow(res);
+}
+
 export async function getProfile(): Promise<{ profile: NutritionProfile | null; targets: NutritionTargets | null }> {
   const res = await fetch(`${API_BASE_URL}/api/profile`, {
     method: "GET",

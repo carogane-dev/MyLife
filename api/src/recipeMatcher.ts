@@ -34,6 +34,7 @@ export interface MatchedIngredient {
   displayQuantity: number;
   displayUnit: string;
   flexible: boolean;
+  grams: number;
   calories: number;
   protein: number;
   fat: number;
@@ -87,7 +88,14 @@ export function matchRecipeToBudget(
 
   const matched: MatchedIngredient[] = fixed.map((i) => {
     const m = macrosFor(i, i.referenceGrams);
-    return { name: i.name, displayQuantity: i.displayQuantity, displayUnit: i.displayUnit, flexible: false, ...m };
+    return {
+      name: i.name,
+      displayQuantity: i.displayQuantity,
+      displayUnit: i.displayUnit,
+      flexible: false,
+      grams: i.referenceGrams,
+      ...m,
+    };
   });
 
   const fixedTotals = matched.reduce(
@@ -131,6 +139,7 @@ export function matchRecipeToBudget(
       displayQuantity: Math.round(ing.displayQuantity * factor * 100) / 100,
       displayUnit: ing.displayUnit,
       flexible: true,
+      grams: roundedGrams,
       ...m,
     });
     budget = subtractFromBudget(budget, m, floor);
