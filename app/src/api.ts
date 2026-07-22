@@ -604,3 +604,28 @@ export async function toggleRecipeLike(id: string): Promise<{ liked: boolean; li
   });
   return parseJsonOrThrow(res);
 }
+
+// ===== Gamification =====
+
+export interface GamificationBadge {
+  id: string;
+  label: string;
+  icon: string;
+  earned: boolean;
+}
+
+export interface GamificationSummary {
+  streak: { currentDays: number | null; bestDays: number | null };
+  totalPoints: number;
+  level: number;
+  mealsLogged: number;
+  badges: GamificationBadge[];
+}
+
+export async function getGamificationSummary(): Promise<GamificationSummary> {
+  const res = await fetch(`${API_BASE_URL}/api/gamification`, {
+    method: "GET",
+    credentials: "include",
+  });
+  return parseJsonOrThrow(res);
+}

@@ -11,6 +11,7 @@ import { mealSuggestionRouter } from "./routes/mealSuggestion.js";
 import { recipesRouter } from "./routes/recipes.js";
 import { nutritionConfigRouter } from "./routes/nutritionConfig.js";
 import { weekPlanRouter } from "./routes/weekPlan.js";
+import { gamificationRouter } from "./routes/gamification.js";
 
 const app = express();
 app.use(
@@ -29,6 +30,7 @@ app.use("/api/meal-suggestion", mealSuggestionRouter);
 app.use("/api/recipes", recipesRouter);
 app.use("/api/nutrition-config", nutritionConfigRouter);
 app.use("/api/week-plan", weekPlanRouter);
+app.use("/api/gamification", gamificationRouter);
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 
