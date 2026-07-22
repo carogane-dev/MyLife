@@ -10,11 +10,12 @@ import DashboardPage from "./DashboardPage.js";
 import HomeProgress from "./HomeProgress.js";
 import MealBuilderPage from "./MealBuilderPage.js";
 import RecipesPage from "./RecipesPage.js";
+import WeekPlanPage from "./WeekPlanPage.js";
 import "./App.css";
 
 type ConnectionState = "checking" | "connected" | "error";
 type AuthState = "loading" | "authenticated" | "unauthenticated";
-type Page = "home" | "fridge" | "scan" | "settings" | "dashboard" | "meal-builder" | "recipes";
+type Page = "home" | "fridge" | "scan" | "settings" | "dashboard" | "meal-builder" | "recipes" | "week-plan";
 
 const FEATURES: { icon: string; title: string; description: string; page?: Page }[] = [
   {
@@ -40,6 +41,12 @@ const FEATURES: { icon: string; title: string; description: string; page?: Page 
     title: "Recettes",
     description: "Découvre et partage des recettes avec la communauté.",
     page: "recipes",
+  },
+  {
+    icon: "📅",
+    title: "Planning de la semaine",
+    description: "Compose automatiquement tes 21 prochains repas.",
+    page: "week-plan",
   },
   {
     icon: "📷",
@@ -161,6 +168,10 @@ export default function App() {
 
       {authState === "authenticated" && profile && page === "recipes" && (
         <RecipesPage onBack={() => setPage("home")} />
+      )}
+
+      {authState === "authenticated" && profile && page === "week-plan" && (
+        <WeekPlanPage onBack={() => setPage("home")} />
       )}
 
       {authState === "authenticated" && profile && page === "home" && (
