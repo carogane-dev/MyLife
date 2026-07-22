@@ -1612,6 +1612,13 @@ body {
   background: #eaf7f0;
 }
 
+.recipe-badge.liked {
+  border-color: #e0566b;
+  color: #e0566b;
+  background: #fdeef1;
+  margin-left: 0.4rem;
+}
+
 .recipe-detail-header {
   display: flex;
   justify-content: space-between;

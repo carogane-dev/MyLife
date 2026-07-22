@@ -3,7 +3,7 @@ import { prisma } from "../db.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { isFiniteNumber, isNonEmptyString } from "../validation.js";
 import { computeDailyBudget, computeSlotBudget, isDayComplete, parseMealsRemaining } from "../dailyBudget.js";
-import { findBestRecipeMatch } from "../recipeMatcher.js";
+import { computeAffinityScores, findBestRecipeMatch } from "../recipeMatcher.js";
 import { isMealSlot } from "../mealSlots.js";
 import type { MealSlot } from "../mealSlots.js";
 
@@ -186,8 +186,13 @@ recipesRouter.get("/suggestion/for-meal", requireAuth, async (req, res) => {
     carbs: targets.targetCarbsG,
   };
   const mealBudget = await computeSlotBudget(req.user!.id, slot, targets, slotContext, mealsRemaining);
+  const decisions = await prisma.recipeDecision.findMany({
+    where: { userId: req.user!.id },
+    select: { recipeId: true, accepted: true },
+  });
+  const affinityScores = computeAffinityScores(decisions);
 
-  const match = findBestRecipeMatch(recipes, mealBudget, dailyTargets, slot, excludeIds, slotContext.benchmark);
+  const match = findBestRecipeMatch(recipes, mealBudget, dailyTargets, slot, excludeIds, slotContext.benchmark, affinityScores);
 
   if (!match) {
     res.status(200).json({ match: null, reason: "Aucune recette compatible avec ce créneau pour l'instant." });

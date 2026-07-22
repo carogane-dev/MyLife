@@ -49,6 +49,11 @@ export interface RecipeMatch {
   // Somme des écarts relatifs aux 3 macros par rapport au budget du repas :
   // 0 = ajustement parfait, plus c'est élevé, moins la recette convient.
   fitScore: number;
+  // true si l'utilisateur a accepté cette recette nettement plus souvent
+  // qu'il ne l'a refusée (voir computeAffinityScores) — sert uniquement à
+  // l'affichage (badge "souvent accepté"), n'influence pas fitScore
+  // au-delà de la pénalité/bonus déjà appliquée.
+  liked: boolean;
 }
 
 // Bornes AMDR (Institute of Medicine) pour la part de chaque macro dans les
@@ -161,6 +166,46 @@ export function ratioPenalty(totals: MacroAmounts, bounds: MacroRatioBounds): nu
   );
 }
 
+// Apprentissage des goûts : agrège l'historique accepter/refuser d'un
+// utilisateur (RecipeDecision) par recette en un score dans ~[-1, 1] — 0 si
+// aucune décision. Le lissage (+2 au dénominateur) amortit un score à
+// faible échantillon : un unique refus ne fait pas chuter le score à -1.
+// Simplification assumée : toutes les décisions comptent pareil, pas de
+// pondération par récence (pas de repère scientifique là-dessus, juste un
+// choix produit pour rester simple et explicable).
+export interface RecipeAffinity {
+  score: number;
+  totalDecisions: number;
+}
+export type RecipeAffinityMap = Map<string, RecipeAffinity>;
+
+const AFFINITY_SMOOTHING = 2;
+const AFFINITY_WEIGHT = 0.3;
+const AFFINITY_LIKED_MIN_DECISIONS = 3;
+const AFFINITY_LIKED_THRESHOLD = 0.3;
+
+export function computeAffinityScores(decisions: { recipeId: string; accepted: boolean }[]): RecipeAffinityMap {
+  const counts = new Map<string, { accepts: number; rejects: number }>();
+  for (const d of decisions) {
+    const c = counts.get(d.recipeId) ?? { accepts: 0, rejects: 0 };
+    if (d.accepted) c.accepts += 1;
+    else c.rejects += 1;
+    counts.set(d.recipeId, c);
+  }
+  const scores: RecipeAffinityMap = new Map();
+  for (const [recipeId, { accepts, rejects }] of counts) {
+    scores.set(recipeId, {
+      score: (accepts - rejects) / (accepts + rejects + AFFINITY_SMOOTHING),
+      totalDecisions: accepts + rejects,
+    });
+  }
+  return scores;
+}
+
+function isLiked(affinity: RecipeAffinity | undefined): boolean {
+  return !!affinity && affinity.totalDecisions >= AFFINITY_LIKED_MIN_DECISIONS && affinity.score > AFFINITY_LIKED_THRESHOLD;
+}
+
 // Macro que cet ingrédient apporte le plus (en calories), utilisée pour
 // décider quelle part du budget restant il doit combler en priorité.
 function dominantMacro(ingredient: RecipeIngredientInput): "protein" | "fat" | "carbs" {
@@ -180,7 +225,8 @@ export function matchRecipeToBudget(
   recipe: RecipeInput,
   mealBudget: MacroAmounts,
   dailyTargets: { calories: number; protein: number; fat: number; carbs: number },
-  ratioBounds?: MacroRatioBounds
+  ratioBounds?: MacroRatioBounds,
+  affinityScores?: RecipeAffinityMap
 ): RecipeMatch {
   const floor: MacroBudget = computeFloor(dailyTargets);
 
@@ -269,15 +315,17 @@ export function matchRecipeToBudget(
     carbs: Math.round(rawTotals.carbs * 10) / 10,
   };
 
+  const affinity = affinityScores?.get(recipe.id);
   const deviation = (value: number, target: number) => (target > 0 ? Math.abs(value - target) / target : 0);
   const fitScore =
     deviation(totals.calories, mealBudget.calories) +
     deviation(totals.protein, mealBudget.protein) +
     deviation(totals.fat, mealBudget.fat) +
     deviation(totals.carbs, mealBudget.carbs) +
-    (ratioBounds ? ratioPenalty(totals, ratioBounds) : 0);
+    (ratioBounds ? ratioPenalty(totals, ratioBounds) : 0) -
+    (affinity ? affinity.score * AFFINITY_WEIGHT : 0);
 
-  return { recipeId: recipe.id, recipeName: recipe.name, ingredients: matched, totals, fitScore };
+  return { recipeId: recipe.id, recipeName: recipe.name, ingredients: matched, totals, fitScore, liked: isLiked(affinity) };
 }
 
 // Essaie toutes les recettes compatibles avec ce créneau et retourne celle
@@ -290,7 +338,8 @@ export function findBestRecipeMatch(
   dailyTargets: { calories: number; protein: number; fat: number; carbs: number },
   slot: MealSlot,
   excludeIds: Set<string> = new Set(),
-  ratioBounds?: MacroRatioBounds
+  ratioBounds?: MacroRatioBounds,
+  affinityScores?: RecipeAffinityMap
 ): RecipeMatch | null {
   const candidates = recipes.filter(
     (r) => !excludeIds.has(r.id) && r.ingredients.length > 0 && r.compatibleSlots.includes(slot)
@@ -298,7 +347,7 @@ export function findBestRecipeMatch(
   if (candidates.length === 0) return null;
 
   const capable = filterByCapacity(candidates, mealBudget.calories);
-  const matches = capable.map((r) => matchRecipeToBudget(r, mealBudget, dailyTargets, ratioBounds));
+  const matches = capable.map((r) => matchRecipeToBudget(r, mealBudget, dailyTargets, ratioBounds, affinityScores));
   matches.sort((a, b) => a.fitScore - b.fitScore);
   return matches[0];
 }

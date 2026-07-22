@@ -313,6 +313,10 @@ export interface RecipeMatch {
   recipeName: string;
   ingredients: RecipeMatchIngredient[];
   totals: { calories: number; protein: number; fat: number; carbs: number };
+  // true si l'historique accepter/refuser de l'utilisateur montre qu'il
+  // apprécie souvent cette recette (voir recipeMatcher.computeAffinityScores
+  // côté backend) — sert uniquement au badge "❤️ Souvent accepté".
+  liked: boolean;
 }
 
 export async function getRecipeSuggestion(
