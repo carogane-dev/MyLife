@@ -1,5 +1,5 @@
-import { matchRecipeToBudget } from "./recipeMatcher.js";
-import type { RecipeInput, RecipeMatch } from "./recipeMatcher.js";
+import { filterByCapacity, matchRecipeToBudget } from "./recipeMatcher.js";
+import type { MacroRatioBounds, RecipeInput, RecipeMatch } from "./recipeMatcher.js";
 import { MEAL_SLOTS, normalizedSlotShare } from "./mealSlots.js";
 import type { MealSlot } from "./mealSlots.js";
 import { computeFloor } from "./mealBudgetMath.js";
@@ -122,6 +122,9 @@ export function generateWeekPlan(
   pinnedAssignments: Map<string, string> = new Map()
 ): WeekPlan {
   const floor = computeFloor(dailyTargets);
+  // Bornes AMDR déjà chargées avec slotContext.benchmark (voir dailyBudget.ts) —
+  // réutilisées telles quelles comme ratioBounds pour recipeMatcher.
+  const ratioBounds: MacroRatioBounds = slotContext.benchmark;
   const workingStock = fridgeItems.map((i) => ({
     name: i.name,
     gramsAvailable: quantityToGrams(i.quantity, i.unit, i.unitWeightGrams),
@@ -212,7 +215,7 @@ export function generateWeekPlan(
         // budget de ce créneau — identique au budget d'origine tant que
         // rien EN AMONT (même jour, créneaux précédents) n'a changé.
         const pinnedRecipe = recipes.find((r) => r.id === pinnedRecipeId);
-        if (pinnedRecipe) bestMatch = matchRecipeToBudget(pinnedRecipe, mealBudget, dailyTargets);
+        if (pinnedRecipe) bestMatch = matchRecipeToBudget(pinnedRecipe, mealBudget, dailyTargets, ratioBounds);
       } else {
         const candidates = recipes.filter((r) => {
           if (excludeRecipeIds.has(r.id)) return false;
@@ -228,7 +231,12 @@ export function generateWeekPlan(
         });
 
         if (candidates.length > 0) {
-          const matches = candidates.map((r) => matchRecipeToBudget(r, mealBudget, dailyTargets));
+          // Écarte en amont les recettes structurellement incapables
+          // d'approcher le budget de ce créneau (ex. 0 ingrédient libre et
+          // un plafond dur bien en-dessous du besoin) — voir
+          // recipeMatcher.filterByCapacity.
+          const capable = filterByCapacity(candidates, mealBudget.calories);
+          const matches = capable.map((r) => matchRecipeToBudget(r, mealBudget, dailyTargets, ratioBounds));
           const adjustedScore = (m: RecipeMatch) => m.fitScore + (usageCount.get(m.recipeId) ?? 0) * VARIETY_PENALTY_PER_USE;
           matches.sort((a, b) => adjustedScore(a) - adjustedScore(b));
           bestMatch = matches[0];

@@ -61,6 +61,37 @@ interface PersistedEntry {
   attempts: number;
 }
 
+// Seuls les créneaux "décidés" (acceptés, mangés, ou épuisés après 5 refus)
+// gardent leur recette figée d'un hydrate() à l'autre. Un créneau encore
+// "proposed" ET JAMAIS REFUSÉ (attempts === 1, sa toute première
+// proposition) reste libre d'être recalculé à chaque appel : sinon,
+// accepter un petit-déjeuner plus léger que prévu ne fait jamais gonfler le
+// budget du déjeuner/dîner encore proposés, qui restent figés sur la
+// recette choisie à la création initiale du planning — la cause du bug où
+// une journée finit très en-dessous de l'objectif malgré l'auto-correction
+// déjà présente dans generateWeekPlan (consumedSoFar cumulatif).
+//
+// Un créneau déjà refusé au moins une fois (attempts > 1) DOIT rester
+// épinglé lui aussi : sa recette actuelle a été choisie par
+// rejectAndRegenerateEntry en excluant précisément les recettes déjà
+// refusées POUR CE CRÉNEAU (RecipeDecision) — un exclude par créneau que
+// generateWeekPlan ne connaît pas (son excludeRecipeIds est global). Sans
+// cet épinglage, l'appel à hydrate() juste après un refus resélectionnerait
+// ce même créneau sans tenir compte de l'historique de refus et pourrait
+// immédiatement re-proposer la recette qui vient d'être refusée.
+const DECIDED_STATUSES = new Set(["accepted", "eaten", "exhausted"]);
+
+function buildPinnedAssignments(entries: PersistedEntry[], excludeEntryId?: string): Map<string, string> {
+  const pinned = new Map<string, string>();
+  for (const e of entries) {
+    if (e.id === excludeEntryId) continue;
+    if (e.recipeId && (DECIDED_STATUSES.has(e.status) || e.attempts > 1)) {
+      pinned.set(`${entryDateToIso(e.date)}|${e.slot}`, e.recipeId);
+    }
+  }
+  return pinned;
+}
+
 async function createFreshWeekPlan(userId: string, ctx: WeekPlanContext) {
   const startDate = tomorrowMidnight();
   const plan = generateWeekPlan(ctx.recipes, ctx.fridgeItems, ctx.dailyTargets, ctx.targets, ctx.slotContext, startDate);
@@ -89,14 +120,15 @@ async function createFreshWeekPlan(userId: string, ctx: WeekPlanContext) {
 // recalcul des quantités/couverture stock/liste de courses à partir de
 // l'état courant du frigo, plus la fusion des métadonnées de décision
 // (entryId/status/attempts) sur chaque créneau.
-function hydrate(
+async function hydrate(
   planRecord: { startDate: Date; entries: PersistedEntry[] },
   ctx: WeekPlanContext
-): WeekPlan & { days: Array<WeekPlan["days"][number] & { slots: Array<WeekPlan["days"][number]["slots"][number] & { entryId: string; status: string; attempts: number }> }> } {
-  const pinnedAssignments = new Map<string, string>();
-  for (const entry of planRecord.entries) {
-    if (entry.recipeId) pinnedAssignments.set(`${entryDateToIso(entry.date)}|${entry.slot}`, entry.recipeId);
-  }
+): Promise<WeekPlan & { days: Array<WeekPlan["days"][number] & { slots: Array<WeekPlan["days"][number]["slots"][number] & { entryId: string; status: string; attempts: number }> }> }> {
+  // Seuls les créneaux décidés sont épinglés — voir DECIDED_STATUSES : un
+  // créneau encore "proposed" est recalculé à chaque hydrate() pour
+  // refléter le budget réellement restant ce jour-là (auto-correction déjà
+  // gérée par generateWeekPlan via consumedSoFar).
+  const pinnedAssignments = buildPinnedAssignments(planRecord.entries);
 
   const weekPlan = generateWeekPlan(
     ctx.recipes,
@@ -111,10 +143,22 @@ function hydrate(
 
   const entryByKey = new Map(planRecord.entries.map((e) => [`${entryDateToIso(e.date)}|${e.slot}`, e]));
 
+  // Un créneau "proposed" recalculé ci-dessus peut désormais pointer vers
+  // une recette différente de celle stockée (budget mis à jour) : la
+  // persister est indispensable pour qu'accepter/refuser agissent bien sur
+  // la recette actuellement affichée, pas sur celle de la création initiale.
+  const updates: Promise<unknown>[] = [];
   const days = weekPlan.days.map((day) => ({
     date: day.date,
     slots: day.slots.map((s) => {
       const entry = entryByKey.get(`${day.date}|${s.slot}`);
+      if (entry && entry.status === "proposed") {
+        const newRecipeId = s.match?.recipeId ?? null;
+        if (newRecipeId !== entry.recipeId) {
+          updates.push(prisma.weekPlanEntry.update({ where: { id: entry.id }, data: { recipeId: newRecipeId } }));
+          entry.recipeId = newRecipeId;
+        }
+      }
       return {
         ...s,
         entryId: entry?.id ?? "",
@@ -124,11 +168,13 @@ function hydrate(
     }),
   }));
 
+  if (updates.length > 0) await Promise.all(updates);
+
   return { ...weekPlan, days };
 }
 
 async function respondHydrated(res: Response, planRecord: { id: string; startDate: Date; entries: PersistedEntry[] }, ctx: WeekPlanContext) {
-  res.status(200).json({ weekPlan: hydrate(planRecord, ctx) });
+  res.status(200).json({ weekPlan: await hydrate(planRecord, ctx) });
 }
 
 // Journalise le refus de la recette courante d'un créneau, puis :
@@ -152,11 +198,7 @@ async function rejectAndRegenerateEntry(entry: PersistedEntry, weekPlanId: strin
   }
 
   const allEntries = await prisma.weekPlan.findUniqueOrThrow({ where: { id: weekPlanId }, include: { entries: true } });
-  const pinnedAssignments = new Map<string, string>();
-  for (const e of allEntries.entries) {
-    if (e.id === entry.id || !e.recipeId) continue;
-    pinnedAssignments.set(`${entryDateToIso(e.date)}|${e.slot}`, e.recipeId);
-  }
+  const pinnedAssignments = buildPinnedAssignments(allEntries.entries, entry.id);
 
   const rejectedDecisions = await prisma.recipeDecision.findMany({
     where: { weekPlanEntryId: entry.id, accepted: false },
