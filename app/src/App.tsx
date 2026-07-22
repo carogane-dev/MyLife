@@ -11,11 +11,21 @@ import HomeProgress from "./HomeProgress.js";
 import MealBuilderPage from "./MealBuilderPage.js";
 import RecipesPage from "./RecipesPage.js";
 import WeekPlanPage from "./WeekPlanPage.js";
+import ScientificDataPage from "./ScientificDataPage.js";
 import "./App.css";
 
 type ConnectionState = "checking" | "connected" | "error";
 type AuthState = "loading" | "authenticated" | "unauthenticated";
-type Page = "home" | "fridge" | "scan" | "settings" | "dashboard" | "meal-builder" | "recipes" | "week-plan";
+type Page =
+  | "home"
+  | "fridge"
+  | "scan"
+  | "settings"
+  | "dashboard"
+  | "meal-builder"
+  | "recipes"
+  | "week-plan"
+  | "scientific-data";
 
 const FEATURES: { icon: string; title: string; description: string; page?: Page }[] = [
   {
@@ -63,6 +73,12 @@ const FEATURES: { icon: string; title: string; description: string; page?: Page 
     title: "Statistiques",
     description: "Visualise tes habitudes alimentaires.",
     page: "dashboard",
+  },
+  {
+    icon: "🔬",
+    title: "Données scientifiques",
+    description: "Les repères utilisés pour calculer tes objectifs et composer tes repas.",
+    page: "scientific-data",
   },
 ];
 
@@ -172,6 +188,10 @@ export default function App() {
 
       {authState === "authenticated" && profile && page === "week-plan" && (
         <WeekPlanPage onBack={() => setPage("home")} />
+      )}
+
+      {authState === "authenticated" && profile && page === "scientific-data" && (
+        <ScientificDataPage onBack={() => setPage("home")} />
       )}
 
       {authState === "authenticated" && profile && page === "home" && (

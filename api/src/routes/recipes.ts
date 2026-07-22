@@ -187,7 +187,7 @@ recipesRouter.get("/suggestion/for-meal", requireAuth, async (req, res) => {
   };
   const mealBudget = await computeSlotBudget(req.user!.id, slot, targets, slotContext, mealsRemaining);
 
-  const match = findBestRecipeMatch(recipes, mealBudget, dailyTargets, slot, excludeIds);
+  const match = findBestRecipeMatch(recipes, mealBudget, dailyTargets, slot, excludeIds, slotContext.benchmark);
 
   if (!match) {
     res.status(200).json({ match: null, reason: "Aucune recette compatible avec ce créneau pour l'instant." });

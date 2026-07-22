@@ -44,6 +44,9 @@ export interface NutritionModeConfigEntry {
   calorieMultiplier: number;
   proteinPerKg: number;
   fatPercent: number;
+  // Justification scientifique (AMDR/ISSN) ou choix produit assumé — le
+  // backend le renvoie toujours, affiché sur la page "Données scientifiques".
+  source: string;
 }
 
 export const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {

@@ -51,6 +51,20 @@ export interface RecipeMatch {
   fitScore: number;
 }
 
+// Bornes AMDR (Institute of Medicine) pour la part de chaque macro dans les
+// calories d'UN repas — voir NutritionBenchmark en base, chargées via
+// SlotContext.benchmark. Simplification assumée : les mêmes bornes
+// journalières sont appliquées repas par repas (pas de repère scientifique
+// distinct par repas trouvé), pratique courante en coaching nutritionnel.
+export interface MacroRatioBounds {
+  carbPercentMin: number;
+  carbPercentMax: number;
+  fatPercentMin: number;
+  fatPercentMax: number;
+  proteinPercentMin: number;
+  proteinPercentMax: number;
+}
+
 function macrosFor(ingredient: RecipeIngredientInput, grams: number): MacroAmounts {
   const ratio = grams / 100;
   return {
@@ -59,6 +73,92 @@ function macrosFor(ingredient: RecipeIngredientInput, grams: number): MacroAmoun
     fat: Math.round(ingredient.fatPer100g * ratio * 10) / 10,
     carbs: Math.round(ingredient.carbsPer100g * ratio * 10) / 10,
   };
+}
+
+// Ramène les quantités de la recette à UNE portion : `referenceGrams`/
+// `displayQuantity` sont saisis pour la recette entière (`servings`
+// portions, cf. routes/recipes.ts computeRecipeMacros qui divise déjà par
+// servings pour l'affichage "par portion"). matchRecipeToBudget composait
+// jusqu'ici un repas pour UNE personne à partir des quantités du LOT
+// ENTIER — une recette à servings=8 (ex. des energy balls) produisait donc
+// un total ~8× trop élevé dès qu'elle était choisie. Toutes les quantités
+// utilisées par la suite (socle fixe, plafond de bon sens des ingrédients
+// libres, grammes stockés pour la liste de courses/couverture stock)
+// doivent partir de cette base par portion.
+function toPerServingIngredients(recipe: RecipeInput): RecipeIngredientInput[] {
+  const servings = recipe.servings > 0 ? recipe.servings : 1;
+  return recipe.ingredients.map((i) => ({
+    ...i,
+    referenceGrams: i.referenceGrams / servings,
+    displayQuantity: i.displayQuantity / servings,
+  }));
+}
+
+// Calories atteignables par UNE portion de cette recette : minimum = socle
+// fixe seul (les ingrédients libres peuvent descendre à 0), maximum = socle
+// fixe + ingrédients libres poussés à leur plafond de bon sens (3× leur
+// quantité de référence, même règle que matchRecipeToBudget). Sert à
+// écarter en amont les recettes structurellement incapables d'approcher le
+// budget d'un créneau (ex. une recette à 0 ingrédient libre et un plafond
+// dur très bas ne devrait jamais être LA proposition d'un repas copieux),
+// plutôt que de compter uniquement sur la pénalité a posteriori du
+// fitScore une fois la recette déjà choisie.
+export interface RecipeCapacity {
+  minCalories: number;
+  maxCalories: number;
+}
+
+export function estimateRecipeCapacity(recipe: RecipeInput): RecipeCapacity {
+  const perServing = toPerServingIngredients(recipe);
+  let minCalories = 0;
+  let maxCalories = 0;
+  for (const i of perServing) {
+    const caloriesPerGram = i.caloriesPer100g / 100;
+    if (i.flexible) {
+      maxCalories += i.referenceGrams * 3 * caloriesPerGram;
+    } else {
+      minCalories += i.referenceGrams * caloriesPerGram;
+      maxCalories += i.referenceGrams * caloriesPerGram;
+    }
+  }
+  return { minCalories, maxCalories };
+}
+
+// Écarte les recettes dont la capacité (voir estimateRecipeCapacity) est
+// trop éloignée du budget calorique visé — trop basse pour l'approcher même
+// en poussant les ingrédients libres au maximum, ou déjà trop élevée rien
+// qu'avec le socle fixe (qui ne peut pas être réduit). Seuils arbitraires,
+// choisis larges pour rester permissifs : 50% et 160% du budget. Si le
+// filtrage ne laisse plus aucun candidat (créneau/pool trop contraint),
+// retombe sur la liste complète plutôt que de ne rien proposer.
+const MIN_CAPACITY_RATIO = 0.5;
+const MAX_FLOOR_OVERSHOOT_RATIO = 1.6;
+
+export function filterByCapacity<T extends RecipeInput>(candidates: T[], targetCalories: number): T[] {
+  if (targetCalories <= 0) return candidates;
+  const capable = candidates.filter((r) => {
+    const { minCalories, maxCalories } = estimateRecipeCapacity(r);
+    return maxCalories >= targetCalories * MIN_CAPACITY_RATIO && minCalories <= targetCalories * MAX_FLOOR_OVERSHOOT_RATIO;
+  });
+  return capable.length > 0 ? capable : candidates;
+}
+
+// Pénalité ajoutée au fitScore quand la répartition macro réalisée
+// (protéines/lipides/glucides en % des calories) sort des bornes AMDR —
+// évite qu'un repas dominé par un seul ingrédient libre très sucré/gras
+// gagne le score malgré un ratio scientifiquement déraisonnable, même si
+// ses grammes/calories bruts collent bien au budget. 0 si dans les bornes.
+export function ratioPenalty(totals: MacroAmounts, bounds: MacroRatioBounds): number {
+  if (totals.calories <= 0) return 0;
+  const proteinPct = (totals.protein * 4) / totals.calories;
+  const fatPct = (totals.fat * 9) / totals.calories;
+  const carbsPct = (totals.carbs * 4) / totals.calories;
+  const outOfBounds = (value: number, min: number, max: number) => Math.max(0, min - value, value - max);
+  return (
+    outOfBounds(proteinPct, bounds.proteinPercentMin, bounds.proteinPercentMax) +
+    outOfBounds(fatPct, bounds.fatPercentMin, bounds.fatPercentMax) +
+    outOfBounds(carbsPct, bounds.carbPercentMin, bounds.carbPercentMax)
+  );
 }
 
 // Macro que cet ingrédient apporte le plus (en calories), utilisée pour
@@ -79,12 +179,14 @@ function dominantMacro(ingredient: RecipeIngredientInput): "protein" | "fat" | "
 export function matchRecipeToBudget(
   recipe: RecipeInput,
   mealBudget: MacroAmounts,
-  dailyTargets: { calories: number; protein: number; fat: number; carbs: number }
+  dailyTargets: { calories: number; protein: number; fat: number; carbs: number },
+  ratioBounds?: MacroRatioBounds
 ): RecipeMatch {
   const floor: MacroBudget = computeFloor(dailyTargets);
 
-  const fixed = recipe.ingredients.filter((i) => !i.flexible);
-  const flexible = recipe.ingredients.filter((i) => i.flexible);
+  const perServing = toPerServingIngredients(recipe);
+  const fixed = perServing.filter((i) => !i.flexible);
+  const flexible = perServing.filter((i) => i.flexible);
 
   const matched: MatchedIngredient[] = fixed.map((i) => {
     const m = macrosFor(i, i.referenceGrams);
@@ -172,7 +274,8 @@ export function matchRecipeToBudget(
     deviation(totals.calories, mealBudget.calories) +
     deviation(totals.protein, mealBudget.protein) +
     deviation(totals.fat, mealBudget.fat) +
-    deviation(totals.carbs, mealBudget.carbs);
+    deviation(totals.carbs, mealBudget.carbs) +
+    (ratioBounds ? ratioPenalty(totals, ratioBounds) : 0);
 
   return { recipeId: recipe.id, recipeName: recipe.name, ingredients: matched, totals, fitScore };
 }
@@ -186,14 +289,16 @@ export function findBestRecipeMatch(
   mealBudget: MacroAmounts,
   dailyTargets: { calories: number; protein: number; fat: number; carbs: number },
   slot: MealSlot,
-  excludeIds: Set<string> = new Set()
+  excludeIds: Set<string> = new Set(),
+  ratioBounds?: MacroRatioBounds
 ): RecipeMatch | null {
   const candidates = recipes.filter(
     (r) => !excludeIds.has(r.id) && r.ingredients.length > 0 && r.compatibleSlots.includes(slot)
   );
   if (candidates.length === 0) return null;
 
-  const matches = candidates.map((r) => matchRecipeToBudget(r, mealBudget, dailyTargets));
+  const capable = filterByCapacity(candidates, mealBudget.calories);
+  const matches = capable.map((r) => matchRecipeToBudget(r, mealBudget, dailyTargets, ratioBounds));
   matches.sort((a, b) => a.fitScore - b.fitScore);
   return matches[0];
 }

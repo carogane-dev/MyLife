@@ -1732,3 +1732,26 @@ body {
 .meal-item-name .recipe-flexible-tag {
   margin-left: 0.5rem;
 }
+
+/* Page données scientifiques */
+
+.scientific-data-page h3 {
+  margin: 1.5rem 0 0.25rem;
+}
+
+.scientific-data-row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+}
+
+.scientific-data-values {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.scientific-data-source {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-style: italic;
+}

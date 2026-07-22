@@ -26,7 +26,21 @@ export interface SlotContext {
   breakfastCaloriePercent: number | null;
   lunchCaloriePercent: number | null;
   dinnerCaloriePercent: number | null;
-  benchmark: { defaultBreakfastPercent: number; defaultLunchPercent: number; defaultDinnerPercent: number };
+  benchmark: {
+    defaultBreakfastPercent: number;
+    defaultLunchPercent: number;
+    defaultDinnerPercent: number;
+    // Bornes AMDR (déjà chargées avec la même ligne NutritionBenchmark,
+    // aucune requête supplémentaire) — voir recipeMatcher.ts ratioPenalty,
+    // qui les utilise désormais pour pénaliser un repas dont la répartition
+    // macro réalisée sort de ces fourchettes.
+    carbPercentMin: number;
+    carbPercentMax: number;
+    fatPercentMin: number;
+    fatPercentMax: number;
+    proteinPercentMin: number;
+    proteinPercentMax: number;
+  };
 }
 
 export interface DailyBudgetInfo {
@@ -80,11 +94,17 @@ export async function computeDailyBudget(userId: string): Promise<DailyBudgetInf
 
   // La ligne NutritionBenchmark est insérée par migration et n'est jamais
   // supprimée : ce repli n'est qu'un filet de sécurité, pas un chemin
-  // normal.
+  // normal. Valeurs alignées sur les défauts `@default(...)` du schéma.
   const resolvedBenchmark = benchmark ?? {
     defaultBreakfastPercent: 0.225,
     defaultLunchPercent: 0.375,
     defaultDinnerPercent: 0.275,
+    carbPercentMin: 0.45,
+    carbPercentMax: 0.65,
+    fatPercentMin: 0.2,
+    fatPercentMax: 0.35,
+    proteinPercentMin: 0.1,
+    proteinPercentMax: 0.35,
   };
 
   return {
