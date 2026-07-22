@@ -162,7 +162,12 @@ export function buildMealSuggestion(
   const slotItems = allItems.filter((i) => i.compatibleSlots.includes(slot));
   const config = MEAL_SLOT_ROLE_CONFIG[slot];
 
-  let budget: MacroBudget = { protein: mealBudget.protein, fat: mealBudget.fat, carbs: mealBudget.carbs };
+  let budget: MacroBudget = {
+    calories: mealBudget.calories,
+    protein: mealBudget.protein,
+    fat: mealBudget.fat,
+    carbs: mealBudget.carbs,
+  };
   const mealBudgetSnapshot: MacroBudget = { ...budget };
   const floor = computeFloor(dailyTargets);
 

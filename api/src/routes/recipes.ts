@@ -179,7 +179,12 @@ recipesRouter.get("/suggestion/for-meal", requireAuth, async (req, res) => {
   const excludeParam = typeof req.query.exclude === "string" ? req.query.exclude : "";
   const excludeIds = new Set(excludeParam.split(",").filter(Boolean));
   const mealsRemaining = parseMealsRemaining(req.query.meals);
-  const dailyTargets = { protein: targets.targetProteinG, fat: targets.targetFatG, carbs: targets.targetCarbsG };
+  const dailyTargets = {
+    calories: targets.targetCalories,
+    protein: targets.targetProteinG,
+    fat: targets.targetFatG,
+    carbs: targets.targetCarbsG,
+  };
   const mealBudget = await computeSlotBudget(req.user!.id, slot, targets, slotContext, mealsRemaining);
 
   const match = findBestRecipeMatch(recipes, mealBudget, dailyTargets, slot, excludeIds);

@@ -183,7 +183,12 @@ export async function computeSlotBudget(
     carbs: Math.max(0, targets.targetCarbsG * cumulativeShare - consumed.carbs),
   };
 
-  const floor = computeFloor({ protein: targets.targetProteinG, fat: targets.targetFatG, carbs: targets.targetCarbsG });
+  const floor = computeFloor({
+    calories: targets.targetCalories,
+    protein: targets.targetProteinG,
+    fat: targets.targetFatG,
+    carbs: targets.targetCarbsG,
+  });
   const meals = Math.max(1, Math.round(mealsRemainingInSlot));
   return {
     calories: slotRemaining.calories / meals,

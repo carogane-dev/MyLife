@@ -36,7 +36,12 @@ mealSuggestionRouter.get("/", requireAuth, async (req, res) => {
   const excludeIds = new Set(excludeParam.split(",").filter(Boolean));
   const mealsRemaining = parseMealsRemaining(req.query.meals);
 
-  const dailyTargets = { protein: targets.targetProteinG, fat: targets.targetFatG, carbs: targets.targetCarbsG };
+  const dailyTargets = {
+    calories: targets.targetCalories,
+    protein: targets.targetProteinG,
+    fat: targets.targetFatG,
+    carbs: targets.targetCarbsG,
+  };
   const mealBudget = await computeSlotBudget(req.user!.id, slot, targets, slotContext, mealsRemaining);
 
   const suggestion = buildMealSuggestion(fridgeItems, mealBudget, dailyTargets, slot, excludeIds);

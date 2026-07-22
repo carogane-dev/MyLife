@@ -331,12 +331,19 @@ export async function getRecipeSuggestion(
   return parseJsonOrThrow(res);
 }
 
+export interface MissingIngredient {
+  name: string;
+  displayQuantity: number;
+  displayUnit: string;
+  grams: number;
+}
+
 export interface WeekPlanSlotAssignment {
   date: string;
   slot: MealSlot;
   match: RecipeMatch | null;
   stockCovered: boolean;
-  missingIngredients: string[];
+  missingIngredients: MissingIngredient[];
 }
 
 export interface WeekPlanDay {
@@ -344,9 +351,16 @@ export interface WeekPlanDay {
   slots: WeekPlanSlotAssignment[];
 }
 
+export interface ShoppingListItem {
+  name: string;
+  totalNeededGrams: number;
+  totalShortfallGrams: number;
+}
+
 export interface WeekPlan {
   days: WeekPlanDay[];
   coverage: { total: number; covered: number };
+  shoppingList: ShoppingListItem[];
 }
 
 export async function getWeekPlan(excludeIds: string[] = []): Promise<{ weekPlan: WeekPlan | null; reason?: string }> {
@@ -355,6 +369,28 @@ export async function getWeekPlan(excludeIds: string[] = []): Promise<{ weekPlan
   const res = await fetch(`${API_BASE_URL}/api/week-plan?${params.toString()}`, {
     method: "GET",
     credentials: "include",
+  });
+  return parseJsonOrThrow(res);
+}
+
+export interface PinnedAssignment {
+  date: string;
+  slot: MealSlot;
+  recipeId: string;
+}
+
+// Régénère un sous-ensemble ciblé du planning (un repas ou un jour entier) :
+// `pinned` liste tout ce qui doit rester identique, `exclude` évite de
+// retomber sur la/les même(s) recette(s) pour les créneaux régénérés.
+export async function regenerateWeekPlan(
+  pinned: PinnedAssignment[],
+  excludeIds: string[] = []
+): Promise<{ weekPlan: WeekPlan | null; reason?: string }> {
+  const res = await fetch(`${API_BASE_URL}/api/week-plan/regenerate`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pinned, exclude: excludeIds }),
   });
   return parseJsonOrThrow(res);
 }
