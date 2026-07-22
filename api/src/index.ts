@@ -9,6 +9,7 @@ import { profileRouter } from "./routes/profile.js";
 import { consumptionRouter } from "./routes/consumption.js";
 import { mealSuggestionRouter } from "./routes/mealSuggestion.js";
 import { recipesRouter } from "./routes/recipes.js";
+import { nutritionConfigRouter } from "./routes/nutritionConfig.js";
 
 const app = express();
 app.use(
@@ -25,6 +26,7 @@ app.use("/api/profile", profileRouter);
 app.use("/api/consumption", consumptionRouter);
 app.use("/api/meal-suggestion", mealSuggestionRouter);
 app.use("/api/recipes", recipesRouter);
+app.use("/api/nutrition-config", nutritionConfigRouter);
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 

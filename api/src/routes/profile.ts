@@ -4,6 +4,7 @@ import { requireAuth } from "../middleware/requireAuth.js";
 import { isFiniteNumber, isNonEmptyString } from "../validation.js";
 import { calculateNutritionTargets } from "../nutritionCalculator.js";
 import type { ActivityLevel, BodyType, GoalMode, Sex } from "../nutritionCalculator.js";
+import { loadModeConfigs } from "../dailyBudget.js";
 
 export const profileRouter = Router();
 
@@ -12,7 +13,7 @@ const ACTIVITY_LEVELS = ["sedentaire", "leger", "modere", "actif", "tres_actif"]
 const GOAL_MODES = ["frigo_only", "chill", "ligne", "elite"];
 const BODY_TYPES = ["endurance", "athletic", "mass"];
 
-function toTargets(profile: {
+async function toTargets(profile: {
   sex: string;
   age: number;
   heightCm: number;
@@ -21,22 +22,26 @@ function toTargets(profile: {
   goalMode: string;
   bodyType: string | null;
 }) {
-  return calculateNutritionTargets({
-    sex: profile.sex as Sex,
-    age: profile.age,
-    heightCm: profile.heightCm,
-    weightKg: profile.weightKg,
-    activityLevel: profile.activityLevel as ActivityLevel,
-    goalMode: profile.goalMode as GoalMode,
-    bodyType: profile.bodyType as BodyType | null,
-  });
+  const modeConfigs = await loadModeConfigs();
+  return calculateNutritionTargets(
+    {
+      sex: profile.sex as Sex,
+      age: profile.age,
+      heightCm: profile.heightCm,
+      weightKg: profile.weightKg,
+      activityLevel: profile.activityLevel as ActivityLevel,
+      goalMode: profile.goalMode as GoalMode,
+      bodyType: profile.bodyType as BodyType | null,
+    },
+    modeConfigs
+  );
 }
 
 profileRouter.get("/", requireAuth, async (req, res) => {
   const profile = await prisma.nutritionProfile.findUnique({
     where: { userId: req.user!.id },
   });
-  const targets = profile ? toTargets(profile) : null;
+  const targets = profile ? await toTargets(profile) : null;
   res.status(200).json({ profile, targets });
 });
 
@@ -84,7 +89,7 @@ profileRouter.put("/", requireAuth, async (req, res) => {
     update: data,
   });
 
-  const targets = toTargets(profile);
+  const targets = await toTargets(profile);
 
   res.status(200).json({ profile, targets });
 });

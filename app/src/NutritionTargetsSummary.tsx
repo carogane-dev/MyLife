@@ -162,6 +162,11 @@ export default function NutritionTargetsSummary({
         </p>
         <p>{explanationReason(goalMode, bodyType, sex, targets)}</p>
       </details>
+
+      <p className="nutrition-targets-disclaimer">
+        Estimation basée sur des formules nutritionnelles standards (Mifflin-St Jeor, repères AMDR/ISSN) — pas un avis
+        médical.
+      </p>
     </div>
   );
 }

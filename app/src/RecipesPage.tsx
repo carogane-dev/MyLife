@@ -7,11 +7,13 @@ import {
   deleteRecipe,
   toggleRecipeLike,
 } from "./api.js";
-import type { RecipeSummary, RecipeDetail, RecipeDraft, RecipeIngredient, RecipeFilters } from "./api.js";
+import type { MealSlot, RecipeSummary, RecipeDetail, RecipeDraft, RecipeIngredient, RecipeFilters } from "./api.js";
+import { MEAL_SLOTS } from "./api.js";
 
 const CATEGORIES = ["Petit-déjeuner", "Plat", "Entrée", "Dessert", "Snack"];
 const DIFFICULTIES = ["facile", "moyen", "difficile"];
 const DIFFICULTY_STARS: Record<string, string> = { facile: "★☆☆", moyen: "★★☆", difficile: "★★★" };
+const SLOT_LABELS: Record<MealSlot, string> = { "petit-dejeuner": "Petit-déjeuner", dejeuner: "Déjeuner", diner: "Dîner" };
 
 type Mode = "list" | "detail" | "create" | "edit";
 
@@ -40,6 +42,7 @@ function emptyDraft(): RecipeDraft {
     prepMinutes: 10,
     cookMinutes: 10,
     servings: 2,
+    compatibleSlots: [...MEAL_SLOTS],
     ingredients: [emptyIngredient()],
   };
 }
@@ -55,6 +58,7 @@ function toDraft(recipe: RecipeDetail): RecipeDraft {
     prepMinutes: recipe.prepMinutes,
     cookMinutes: recipe.cookMinutes,
     servings: recipe.servings,
+    compatibleSlots: recipe.compatibleSlots,
     ingredients: recipe.ingredients.map((i) => ({ ...i })),
   };
 }
@@ -196,6 +200,24 @@ export default function RecipesPage({ onBack }: { onBack: () => void }) {
             <input type="checkbox" checked={draft.healthy} onChange={(e) => updateDraft({ healthy: e.target.checked })} />
             Recette orientée healthy
           </label>
+          <fieldset className="recipe-slot-fieldset">
+            <legend>Créneaux compatibles</legend>
+            {MEAL_SLOTS.map((s) => (
+              <label key={s} className="recipe-checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={draft.compatibleSlots.includes(s)}
+                  onChange={(e) => {
+                    const next = e.target.checked
+                      ? [...draft.compatibleSlots, s]
+                      : draft.compatibleSlots.filter((v) => v !== s);
+                    updateDraft({ compatibleSlots: next });
+                  }}
+                />
+                {SLOT_LABELS[s]}
+              </label>
+            ))}
+          </fieldset>
           <label>
             Préparation (min)
             <input

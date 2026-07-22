@@ -40,7 +40,62 @@ model NutritionProfile {
   goalMode      String  @default("ligne") // "precision" | "ligne" | "elite" | "frigo_only"
   bodyType      String? // "endurance" | "athletic" | "mass" — utilisé uniquement si goalMode === "elite"
 
+  // Répartition intra-journalière des calories (petit-déjeuner/déjeuner/dîner),
+  // en fraction de la cible journalière. Nullable : null = utiliser les
+  // valeurs par défaut de NutritionBenchmark. Pas encore d'écran de réglage
+  // pour ces champs (prévu plus tard) — le champ existe pour ne pas avoir à
+  // migrer une seconde fois quand cet écran arrivera.
+  breakfastCaloriePercent Float?
+  lunchCaloriePercent     Float?
+  dinnerCaloriePercent    Float?
+
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Paramètres de calcul par mode d'objectif (et morphologie pour "elite"),
+// déplacés en base pour être ajustables sans déploiement de code — voir
+// api/src/nutritionCalculator.ts pour leur utilisation. `source` documente
+// la justification scientifique (AMDR/ISSN) ou, à défaut, marque
+// explicitement un choix produit assumé plutôt que dérivé d'un repère.
+model NutritionModeConfig {
+  id                String  @id @default(uuid())
+  goalMode          String // "chill" | "ligne" | "elite"
+  bodyType          String? // non-null seulement si goalMode === "elite"
+  calorieMultiplier Float
+  proteinPerKg      Float
+  fatPercent        Float
+  source            String
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([goalMode, bodyType])
+}
+
+// Repères nutritionnels reconnus (AMDR de l'Institute of Medicine, ISSN pour
+// les protéines sportives) et répartition intra-journalière par défaut.
+// Ligne singleton (une seule rangée), lue via findFirst côté backend.
+model NutritionBenchmark {
+  id String @id @default(uuid())
+
+  carbPercentMin    Float @default(0.45)
+  carbPercentMax    Float @default(0.65)
+  fatPercentMin     Float @default(0.20)
+  fatPercentMax     Float @default(0.35)
+  proteinPercentMin Float @default(0.10)
+  proteinPercentMax Float @default(0.35)
+
+  issnProteinPerKgMin Float @default(1.6)
+  issnProteinPerKgMax Float @default(2.2)
+
+  // Milieux des fourchettes documentées (20-25 / 35-40 / 25-30 %) : somment
+  // à 87.5%, volontairement — voir normalizedSlotShare() dans mealSlots.ts
+  // qui les normalise à l'usage plutôt que de forcer 100% ici, pour garder
+  // la traçabilité des valeurs telles que citées dans leur source.
+  defaultBreakfastPercent Float @default(0.225)
+  defaultLunchPercent     Float @default(0.375)
+  defaultDinnerPercent    Float @default(0.275)
+
   updatedAt DateTime @updatedAt
 }
 
@@ -70,6 +125,13 @@ model FridgeItem {
   // `quantity` est un nombre d'exemplaires et non un poids. Repli à 100g
   // si non renseigné (cohérent avec les valeurs de repli de nutritionDefaults.ts).
   unitWeightGrams Float?
+
+  // Créneaux de repas compatibles : "petit-dejeuner" | "dejeuner" | "diner".
+  // Un article peut être compatible avec plusieurs créneaux mais pas
+  // forcément tous (ex. un plat du soir absent du petit-déjeuner) — jamais
+  // déduit à la volée, toujours choisi explicitement (par défaut les 3
+  // valeurs à la création, voir POST /api/fridge).
+  compatibleSlots String[] @default([])
 
   // Toujours fournie explicitement par l'app (validation POST /api/fridge) ;
   // le défaut n'existe que pour permettre la migration sur les lignes
@@ -112,6 +174,11 @@ model ConsumptionEntry {
   fat          Float
   carbs        Float
 
+  // Créneau auquel ce repas a été enregistré : "petit-dejeuner" | "dejeuner"
+  // | "diner". Nullable pour rester compatible avec l'historique déjà
+  // enregistré avant l'introduction des créneaux.
+  mealSlot String?
+
   consumedAt DateTime @default(now())
 
   @@index([userId, consumedAt])
@@ -147,6 +214,12 @@ model Recipe {
   prepMinutes Int
   cookMinutes Int
   servings    Int // nombre de portions couvertes par les quantités de référence
+
+  // Créneaux de repas compatibles : "petit-dejeuner" | "dejeuner" | "diner".
+  // Distinct de `category` (type culinaire du plat) : une recette catégorie
+  // "Plat" peut être compatible déjeuner+dîner sans l'être petit-déjeuner.
+  // Champ requis (au moins une valeur) à la création/édition.
+  compatibleSlots String[] @default([])
 
   ingredients RecipeIngredient[]
   likes       RecipeLike[]

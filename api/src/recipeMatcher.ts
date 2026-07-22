@@ -1,3 +1,7 @@
+import { computeFloor, maxGramsForBudget, subtractFromBudget } from "./mealBudgetMath.js";
+import type { MacroBudget } from "./mealBudgetMath.js";
+import type { MealSlot } from "./mealSlots.js";
+
 export interface RecipeIngredientInput {
   name: string;
   displayQuantity: number;
@@ -14,6 +18,7 @@ export interface RecipeInput {
   id: string;
   name: string;
   servings: number;
+  compatibleSlots: string[];
   ingredients: RecipeIngredientInput[];
 }
 
@@ -45,12 +50,6 @@ export interface RecipeMatch {
   fitScore: number;
 }
 
-interface MacroBudget {
-  protein: number;
-  fat: number;
-  carbs: number;
-}
-
 function macrosFor(ingredient: RecipeIngredientInput, grams: number): MacroAmounts {
   const ratio = grams / 100;
   return {
@@ -72,32 +71,6 @@ function dominantMacro(ingredient: RecipeIngredientInput): "protein" | "fat" | "
   return "carbs";
 }
 
-// Mêmes principes que api/src/mealBuilder.ts : plafonne un ingrédient par
-// le budget macro du repas sur les dimensions encore "actives" (celles pas
-// déjà tombées à leur plancher), pour éviter qu'un ingrédient gras ne fasse
-// exploser le budget lipides même choisi pour ses glucides par exemple.
-function maxGramsForBudget(ingredient: RecipeIngredientInput, budget: MacroBudget, floor: MacroBudget): number {
-  let max = Infinity;
-  if (ingredient.proteinPer100g > 0 && budget.protein > floor.protein * 1.01) {
-    max = Math.min(max, (budget.protein / ingredient.proteinPer100g) * 100);
-  }
-  if (ingredient.fatPer100g > 0 && budget.fat > floor.fat * 1.01) {
-    max = Math.min(max, (budget.fat / ingredient.fatPer100g) * 100);
-  }
-  if (ingredient.carbsPer100g > 0 && budget.carbs > floor.carbs * 1.01) {
-    max = Math.min(max, (budget.carbs / ingredient.carbsPer100g) * 100);
-  }
-  return Math.max(0, max);
-}
-
-function subtractFromBudget(budget: MacroBudget, macros: MacroAmounts, floor: MacroBudget): MacroBudget {
-  return {
-    protein: Math.max(floor.protein, budget.protein - macros.protein),
-    fat: Math.max(floor.fat, budget.fat - macros.fat),
-    carbs: Math.max(floor.carbs, budget.carbs - macros.carbs),
-  };
-}
-
 // Adapte une recette à un budget de repas donné : les ingrédients "libres"
 // sont redimensionnés (en plus ou en moins) pour coller au mieux au
 // budget ; les ingrédients non-libres restent à leur quantité de référence
@@ -107,11 +80,7 @@ export function matchRecipeToBudget(
   mealBudget: MacroAmounts,
   dailyTargets: { protein: number; fat: number; carbs: number }
 ): RecipeMatch {
-  const floor: MacroBudget = {
-    protein: dailyTargets.protein * 0.03,
-    fat: dailyTargets.fat * 0.03,
-    carbs: dailyTargets.carbs * 0.03,
-  };
+  const floor: MacroBudget = computeFloor(dailyTargets);
 
   const fixed = recipe.ingredients.filter((i) => !i.flexible);
   const flexible = recipe.ingredients.filter((i) => i.flexible);
@@ -186,15 +155,20 @@ export function matchRecipeToBudget(
   return { recipeId: recipe.id, recipeName: recipe.name, ingredients: matched, totals, fitScore };
 }
 
-// Essaie toutes les recettes disponibles et retourne celle qui, une fois
-// ses ingrédients libres ajustés, colle le mieux au budget du repas.
+// Essaie toutes les recettes compatibles avec ce créneau et retourne celle
+// qui, une fois ses ingrédients libres ajustés, colle le mieux au budget du
+// repas. matchRecipeToBudget elle-même ignore le créneau : seul ce filtre
+// en amont en tient compte.
 export function findBestRecipeMatch(
   recipes: RecipeInput[],
   mealBudget: MacroAmounts,
   dailyTargets: { protein: number; fat: number; carbs: number },
+  slot: MealSlot,
   excludeIds: Set<string> = new Set()
 ): RecipeMatch | null {
-  const candidates = recipes.filter((r) => !excludeIds.has(r.id) && r.ingredients.length > 0);
+  const candidates = recipes.filter(
+    (r) => !excludeIds.has(r.id) && r.ingredients.length > 0 && r.compatibleSlots.includes(slot)
+  );
   if (candidates.length === 0) return null;
 
   const matches = candidates.map((r) => matchRecipeToBudget(r, mealBudget, dailyTargets));

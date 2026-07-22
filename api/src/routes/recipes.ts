@@ -2,8 +2,10 @@ import { Router } from "express";
 import { prisma } from "../db.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { isFiniteNumber, isNonEmptyString } from "../validation.js";
-import { computeDailyBudget, computeMealBudget, isDayComplete, parseMealsRemaining } from "../dailyBudget.js";
+import { computeDailyBudget, computeSlotBudget, isDayComplete, parseMealsRemaining } from "../dailyBudget.js";
 import { findBestRecipeMatch } from "../recipeMatcher.js";
+import { isMealSlot } from "../mealSlots.js";
+import type { MealSlot } from "../mealSlots.js";
 
 export const recipesRouter = Router();
 
@@ -38,6 +40,10 @@ function isValidIngredient(i: Record<string, unknown>): boolean {
   );
 }
 
+function isValidCompatibleSlots(value: unknown): value is string[] {
+  return Array.isArray(value) && value.length > 0 && value.every((v) => isMealSlot(v));
+}
+
 function isValidRecipeBody(body: Record<string, unknown>): boolean {
   if (
     !isNonEmptyString(body.name) ||
@@ -53,6 +59,7 @@ function isValidRecipeBody(body: Record<string, unknown>): boolean {
     !isFiniteNumber(body.servings) ||
     (body.servings as number) <= 0 ||
     typeof body.healthy !== "boolean" ||
+    !isValidCompatibleSlots(body.compatibleSlots) ||
     !Array.isArray(body.ingredients) ||
     body.ingredients.length === 0
   ) {
@@ -127,6 +134,7 @@ recipesRouter.get("/", requireAuth, async (req, res) => {
       cookMinutes: r.cookMinutes,
       totalMinutes: r.prepMinutes + r.cookMinutes,
       servings: r.servings,
+      compatibleSlots: r.compatibleSlots,
       ingredientCount: r.ingredients.length,
       likeCount: r.likes.length,
       likedByMe: r.likes.some((l) => l.userId === req.user!.id),
@@ -153,12 +161,14 @@ recipesRouter.get("/suggestion/for-meal", requireAuth, async (req, res) => {
     res.status(200).json({ match: null, reason: "Profil non configuré ou pas d'objectif calorique dans ce mode." });
     return;
   }
-  const { targets, remaining } = budgetInfo;
+  const { targets, remaining, slotContext } = budgetInfo;
 
   if (isDayComplete(remaining, targets)) {
     res.status(200).json({ match: null, reason: "Objectif du jour déjà atteint sur toutes les macros 🎉" });
     return;
   }
+
+  const slot: MealSlot = isMealSlot(req.query.slot) ? req.query.slot : "dejeuner";
 
   const recipes = await prisma.recipe.findMany({ include: { ingredients: true } });
   if (recipes.length === 0) {
@@ -170,12 +180,12 @@ recipesRouter.get("/suggestion/for-meal", requireAuth, async (req, res) => {
   const excludeIds = new Set(excludeParam.split(",").filter(Boolean));
   const mealsRemaining = parseMealsRemaining(req.query.meals);
   const dailyTargets = { protein: targets.targetProteinG, fat: targets.targetFatG, carbs: targets.targetCarbsG };
-  const mealBudget = computeMealBudget(remaining, targets, mealsRemaining);
+  const mealBudget = await computeSlotBudget(req.user!.id, slot, targets, slotContext, mealsRemaining);
 
-  const match = findBestRecipeMatch(recipes, mealBudget, dailyTargets, excludeIds);
+  const match = findBestRecipeMatch(recipes, mealBudget, dailyTargets, slot, excludeIds);
 
   if (!match) {
-    res.status(200).json({ match: null, reason: "Aucune recette ne correspond pour l'instant." });
+    res.status(200).json({ match: null, reason: "Aucune recette compatible avec ce créneau pour l'instant." });
     return;
   }
 
@@ -207,6 +217,7 @@ recipesRouter.get("/:id", requireAuth, async (req, res) => {
       cookMinutes: recipe.cookMinutes,
       totalMinutes: recipe.prepMinutes + recipe.cookMinutes,
       servings: recipe.servings,
+      compatibleSlots: recipe.compatibleSlots,
       authorEmail: recipe.author.email,
       isAuthor: recipe.authorId === req.user!.id,
       ingredients: recipe.ingredients.map((i) => ({
@@ -249,6 +260,7 @@ recipesRouter.post("/", requireAuth, async (req, res) => {
       prepMinutes: body.prepMinutes,
       cookMinutes: body.cookMinutes,
       servings: body.servings,
+      compatibleSlots: body.compatibleSlots as string[],
       ingredients: {
         create: ingredients.map((i, index) => ({
           name: i.name,
@@ -297,6 +309,7 @@ recipesRouter.put("/:id", requireAuth, async (req, res) => {
         prepMinutes: body.prepMinutes,
         cookMinutes: body.cookMinutes,
         servings: body.servings,
+        compatibleSlots: body.compatibleSlots as string[],
         ingredients: {
           create: ingredients.map((i, index) => ({
             name: i.name,
