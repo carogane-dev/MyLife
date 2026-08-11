@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFridgeItem, updateFridgeItem } from "./api.js";
 import type { FridgeItem, FridgeItemDraft } from "./api.js";
 import { DISPLAY_CATEGORIES, CATEGORY_NUTRITION_DEFAULTS } from "./fridgeCategories.js";
 import type { DisplayCategory } from "./fridgeCategories.js";
 import { isGramsBasedUnit } from "./unitConversion.js";
+import { useToast } from "./ToastProvider.js";
 
 function emptyDraft(): FridgeItemDraft {
   return {
@@ -49,6 +50,11 @@ export default function FridgeItemFormPage({
   const [draft, setDraft] = useState<FridgeItemDraft>(item ? toDraft(item) : emptyDraft());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    if (error) showToast(error);
+  }, [error, showToast]);
 
   function update(patch: Partial<FridgeItemDraft>) {
     setDraft((d) => ({ ...d, ...patch }));
@@ -194,7 +200,6 @@ export default function FridgeItemFormPage({
         </label>
       </div>
 
-      {error && <p className="fridge-error">{error}</p>}
 
       <div className="scan-actions">
         <button className="auth-submit" onClick={handleSubmit} disabled={saving || !canSubmit}>

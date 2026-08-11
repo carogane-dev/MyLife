@@ -4,6 +4,7 @@ import type { ConsumptionEntry, NutritionProfile } from "./api.js";
 import { calculateNutritionTargets } from "./nutritionCalculator.js";
 import { useNutritionConfig } from "./useNutritionConfig.js";
 import DailyProgress, { sumConsumption } from "./DailyProgress.js";
+import { useToast } from "./ToastProvider.js";
 
 function dayStart(d: Date): Date {
   const x = new Date(d);
@@ -30,6 +31,11 @@ export default function DashboardPage({ onBack }: { onBack: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [simulating, setSimulating] = useState(false);
   const { modeConfigs } = useNutritionConfig();
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    if (error) showToast(error);
+  }, [error, showToast]);
 
   function load() {
     const today = new Date();
@@ -93,7 +99,6 @@ export default function DashboardPage({ onBack }: { onBack: () => void }) {
         </button>
       </div>
 
-      {error && <p className="fridge-error">{error}</p>}
 
       {profile && profile.goalMode === "frigo_only" && (
         <p className="fridge-empty">

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { getConsumptionEntries } from "./api.js";
 import type { ConsumptionEntry, MealSlot } from "./api.js";
+import { useToast } from "./ToastProvider.js";
+import Skeleton from "./Skeleton.js";
 
 const SLOT_ICONS: Record<MealSlot, string> = {
   "petit-dejeuner": "🌅",
@@ -66,6 +68,7 @@ export default function HistoryPage({ onBack }: { onBack: () => void }) {
   const [entries, setEntries] = useState<ConsumptionEntry[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     const today = new Date();
@@ -80,6 +83,10 @@ export default function HistoryPage({ onBack }: { onBack: () => void }) {
       .finally(() => setLoading(false));
   }, [rangeDays]);
 
+  useEffect(() => {
+    if (error) showToast(error);
+  }, [error, showToast]);
+
   const groups = entries ? groupByDay(entries) : null;
 
   return (
@@ -90,7 +97,13 @@ export default function HistoryPage({ onBack }: { onBack: () => void }) {
       <h2>📖 Historique</h2>
       <p className="wizard-hint">Tous tes repas journalisés, du plus récent au plus ancien.</p>
 
-      {error && <p className="fridge-error">{error}</p>}
+      {!groups && loading && (
+        <div className="skeleton-stack">
+          <Skeleton height="18px" width="30%" />
+          <Skeleton height="60px" />
+          <Skeleton height="60px" />
+        </div>
+      )}
 
       {groups && groups.length === 0 && !loading && (
         <p className="fridge-empty">Aucun repas journalisé sur cette période.</p>

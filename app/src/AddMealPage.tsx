@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { recognizeMealPhoto, logManualConsumption } from "./api.js";
 import type { MealSlot } from "./api.js";
+import { useToast } from "./ToastProvider.js";
 
 const SLOT_LABELS: Record<MealSlot, string> = {
   "petit-dejeuner": "🌅 Petit-déjeuner",
@@ -47,6 +48,11 @@ export default function AddMealPage({ onBack }: { onBack: () => void }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    if (error) showToast(error);
+  }, [error, showToast]);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -169,7 +175,6 @@ export default function AddMealPage({ onBack }: { onBack: () => void }) {
             </div>
           )}
 
-          {error && <p className="fridge-error">{error}</p>}
           {reason && <p className="fridge-empty">{reason}</p>}
           {confidence && <p className="scan-hint">{CONFIDENCE_LABELS[confidence] ?? confidence}</p>}
           {notes && <p className="scan-hint">{notes}</p>}

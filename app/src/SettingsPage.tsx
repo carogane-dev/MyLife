@@ -6,6 +6,8 @@ import ChoiceCards from "./ChoiceCards.js";
 import NutritionTargetsSummary, { GOAL_MODE_OPTIONS, getBodyTypeOptions } from "./NutritionTargetsSummary.js";
 import { calculateNutritionTargets } from "./nutritionCalculator.js";
 import { useNutritionConfig } from "./useNutritionConfig.js";
+import { useToast } from "./ToastProvider.js";
+import Skeleton from "./Skeleton.js";
 
 const SEX_OPTIONS = [
   { value: "homme", label: "Homme" },
@@ -29,6 +31,11 @@ export default function SettingsPage({ onBack }: { onBack: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const { modeConfigs } = useNutritionConfig();
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    if (error) showToast(error);
+  }, [error, showToast]);
 
   useEffect(() => {
     getProfile()
@@ -81,8 +88,14 @@ export default function SettingsPage({ onBack }: { onBack: () => void }) {
       </button>
       <h2>⚙️ Paramètres</h2>
 
-      {loading && <p>Chargement…</p>}
-      {error && <p className="fridge-error">{error}</p>}
+      {loading && (
+        <div className="skeleton-stack">
+          <Skeleton height="20px" width="40%" />
+          <Skeleton height="48px" />
+          <Skeleton height="48px" />
+          <Skeleton height="48px" />
+        </div>
+      )}
 
       {draft && (
         <div className="settings-form">

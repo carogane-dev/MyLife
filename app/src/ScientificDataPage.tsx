@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { getNutritionConfig } from "./api.js";
 import type { NutritionBenchmark, NutritionModeConfigEntry } from "./api.js";
 import { GOAL_MODE_OPTIONS } from "./NutritionTargetsSummary.js";
+import { useToast } from "./ToastProvider.js";
+import Skeleton from "./Skeleton.js";
 
 const BODY_TYPE_LABELS: Record<string, string> = {
   endurance: "Endurance",
@@ -22,6 +24,7 @@ export default function ScientificDataPage({ onBack }: { onBack: () => void }) {
   const [benchmark, setBenchmark] = useState<NutritionBenchmark | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     getNutritionConfig()
@@ -32,6 +35,10 @@ export default function ScientificDataPage({ onBack }: { onBack: () => void }) {
       .catch((err) => setError(err instanceof Error ? err.message : "Une erreur est survenue."))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (error) showToast(error);
+  }, [error, showToast]);
 
   return (
     <div className="scientific-data-page">
@@ -46,8 +53,13 @@ export default function ScientificDataPage({ onBack }: { onBack: () => void }) {
         évoluent.
       </p>
 
-      {loading && <p className="scan-status">Chargement…</p>}
-      {error && <p className="fridge-error">{error}</p>}
+      {loading && (
+        <div className="skeleton-stack">
+          <Skeleton height="18px" width="50%" />
+          <Skeleton height="80px" />
+          <Skeleton height="80px" />
+        </div>
+      )}
 
       {!loading && modeConfigs && benchmark && (
         <>
