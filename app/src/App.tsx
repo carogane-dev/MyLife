@@ -13,6 +13,7 @@ import RecipesPage from "./RecipesPage.js";
 import WeekPlanPage from "./WeekPlanPage.js";
 import ScientificDataPage from "./ScientificDataPage.js";
 import GamificationSummary from "./GamificationSummary.js";
+import AddMealPage from "./AddMealPage.js";
 import "./App.css";
 
 type ConnectionState = "checking" | "connected" | "error";
@@ -26,7 +27,8 @@ type Page =
   | "meal-builder"
   | "recipes"
   | "week-plan"
-  | "scientific-data";
+  | "scientific-data"
+  | "add-meal";
 
 const FEATURES: { icon: string; title: string; description: string; page?: Page }[] = [
   {
@@ -63,6 +65,7 @@ const FEATURES: { icon: string; title: string; description: string; page?: Page 
     icon: "📷",
     title: "Ajouter un repas",
     description: "Prends une photo, l'IA reconnaît le plat.",
+    page: "add-meal",
   },
   {
     icon: "📖",
@@ -193,6 +196,10 @@ export default function App() {
 
       {authState === "authenticated" && profile && page === "scientific-data" && (
         <ScientificDataPage onBack={() => setPage("home")} />
+      )}
+
+      {authState === "authenticated" && profile && page === "add-meal" && (
+        <AddMealPage onBack={() => setPage("home")} />
       )}
 
       {authState === "authenticated" && profile && page === "home" && (

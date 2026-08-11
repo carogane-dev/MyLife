@@ -12,6 +12,7 @@ import { recipesRouter } from "./routes/recipes.js";
 import { nutritionConfigRouter } from "./routes/nutritionConfig.js";
 import { weekPlanRouter } from "./routes/weekPlan.js";
 import { gamificationRouter } from "./routes/gamification.js";
+import { mealsRouter } from "./routes/meals.js";
 
 const app = express();
 app.use(
@@ -20,7 +21,10 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
+// 10mb : accueille une photo encodée en base64 pour la reconnaissance de
+// plats (routes/meals.ts) — le défaut d'express.json() (100kb) est trop
+// bas pour une photo de téléphone.
+app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser(process.env.SESSION_COOKIE_SECRET));
 app.use("/api/auth", authRouter);
 app.use("/api/fridge", fridgeRouter);
@@ -31,6 +35,7 @@ app.use("/api/recipes", recipesRouter);
 app.use("/api/nutrition-config", nutritionConfigRouter);
 app.use("/api/week-plan", weekPlanRouter);
 app.use("/api/gamification", gamificationRouter);
+app.use("/api/meals", mealsRouter);
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 
@@ -47,13 +52,6 @@ app.get("/api/health/db", async (_req, res) => {
   } catch (err) {
     res.status(500).json({ status: "error", message: (err as Error).message });
   }
-});
-
-// Squelette de la future route de reconnaissance de plats
-// (pour l'instant : liste vide, on branchera l'IA vision dans une prochaine étape)
-app.get("/api/meals", async (_req, res) => {
-  const meals = await prisma.mealEntry.findMany({ orderBy: { eatenAt: "desc" }, take: 20 });
-  res.json(meals);
 });
 
 app.listen(PORT, () => {
