@@ -629,3 +629,44 @@ export async function getGamificationSummary(): Promise<GamificationSummary> {
   });
   return parseJsonOrThrow(res);
 }
+
+// ===== Reconnaissance de plats par photo =====
+
+export interface DishRecognitionResult {
+  recognized: boolean;
+  reason?: string;
+  mealEntryId?: string;
+  dishName?: string;
+  confidence?: "haute" | "moyenne" | "basse";
+  estimatedMacros?: { calories: number; protein: number; fat: number; carbs: number };
+  notes?: string;
+}
+
+export interface MealEntry {
+  id: string;
+  photoUrl: string | null;
+  dishName: string | null;
+  eatenAt: string;
+  createdAt: string;
+}
+
+// imageBase64 sans le préfixe "data:...;base64," (à retirer côté appelant).
+export async function recognizeMealPhoto(imageBase64: string, mediaType: string): Promise<DishRecognitionResult> {
+  const res = await fetch(`${API_BASE_URL}/api/meals/recognize`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ imageBase64, mediaType }),
+  });
+  return parseJsonOrThrow(res);
+}
+
+// Pas encore consommée par une page "Historique" (toujours "Bientôt
+// disponible") — exposée pour un usage futur.
+export async function getMealHistory(): Promise<MealEntry[]> {
+  const res = await fetch(`${API_BASE_URL}/api/meals`, {
+    method: "GET",
+    credentials: "include",
+  });
+  return parseJsonOrThrow(res);
+}

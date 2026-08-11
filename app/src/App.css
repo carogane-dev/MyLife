@@ -1817,3 +1817,29 @@ body {
   color: #8a6414;
   background: #fdf3e0;
 }
+
+/* Ajouter un repas (reconnaissance photo) */
+
+.add-meal-photo-input {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-align: center;
+}
+
+.add-meal-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.add-meal-photo-preview {
+  max-width: 100%;
+  max-height: 320px;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  object-fit: cover;
+}
