@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getMealSuggestion, markItemEaten, getRecipeSuggestion, logManualConsumption } from "./api.js";
 import type { MealSlot, MealSuggestion, RecipeMatch } from "./api.js";
+import { useToast } from "./ToastProvider.js";
 
 type Source = "fridge" | "recipe";
 
@@ -31,6 +32,11 @@ export default function MealBuilderPage({ onBack }: { onBack: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [eaten, setEaten] = useState(false);
   const [mealsRemaining, setMealsRemaining] = useState(1);
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    if (error) showToast(error);
+  }, [error, showToast]);
 
   function load(currentSource: Source, currentSlot: MealSlot, excludeIds: string[] = [], meals = mealsRemaining) {
     setLoading(true);
@@ -159,7 +165,6 @@ export default function MealBuilderPage({ onBack }: { onBack: () => void }) {
       </div>
 
       {loading && <p className="scan-status">Recherche des meilleurs ingrédients…</p>}
-      {error && <p className="fridge-error">{error}</p>}
 
       {!loading && !hasResult && reason && <p className="fridge-empty">{reason}</p>}
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { signIn, signUp } from "./api.js";
 import type { User } from "./api.js";
+import Button from "./Button.js";
 
 type Mode = "signin" | "signup";
 
@@ -108,9 +109,9 @@ export default function AuthPage({ onAuthenticated }: { onAuthenticated: (user: 
 
           {error && <p className="auth-error">{error}</p>}
 
-          <button type="submit" className="auth-submit" disabled={loading}>
+          <Button type="submit" className="auth-submit" disabled={loading}>
             {loading ? (mode === "signup" ? "Création…" : "Connexion…") : mode === "signup" ? "Créer un compte" : "Se connecter"}
-          </button>
+          </Button>
         </form>
       </div>
     </div>

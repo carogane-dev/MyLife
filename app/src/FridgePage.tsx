@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { deleteFridgeItem, getFridgeItems, markItemEaten } from "./api.js";
 import type { FridgeItem } from "./api.js";
 import FridgeItemFormPage from "./FridgeItemFormPage.js";
+import { useToast } from "./ToastProvider.js";
+import Skeleton from "./Skeleton.js";
 
 type GroupedItems = Record<string, Record<string, FridgeItem[]>>;
 type SortBy = "expiration" | "weight" | "name";
@@ -50,6 +52,19 @@ export default function FridgePage({ onBack }: { onBack: () => void }) {
   const [eatingId, setEatingId] = useState<string | null>(null);
   const [eatQuantity, setEatQuantity] = useState(0);
   const [eatError, setEatError] = useState<string | null>(null);
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    if (error) showToast(error);
+  }, [error, showToast]);
+
+  useEffect(() => {
+    if (deleteError) showToast(deleteError);
+  }, [deleteError, showToast]);
+
+  useEffect(() => {
+    if (eatError) showToast(eatError);
+  }, [eatError, showToast]);
 
   function reload() {
     getFridgeItems()
@@ -151,9 +166,14 @@ export default function FridgePage({ onBack }: { onBack: () => void }) {
         </div>
       )}
 
-      {deleteError && <p className="fridge-error">{deleteError}</p>}
-      {items === null && !error && <p>Chargement…</p>}
-      {error && <p className="fridge-error">{error}</p>}
+      {items === null && !error && (
+        <div className="skeleton-stack">
+          <Skeleton height="20px" width="40%" />
+          <Skeleton height="56px" />
+          <Skeleton height="56px" />
+          <Skeleton height="56px" />
+        </div>
+      )}
       {items !== null && items.length === 0 && (
         <p className="fridge-empty">Ton frigo est vide pour l'instant.</p>
       )}
@@ -222,7 +242,6 @@ export default function FridgePage({ onBack }: { onBack: () => void }) {
                                             onChange={(e) => setEatQuantity(Number(e.target.value))}
                                           />
                                         </label>
-                                        {eatError && <p className="fridge-error">{eatError}</p>}
                                         <div className="fridge-item-actions">
                                           <button
                                             className="fridge-item-action-button confirm eat"

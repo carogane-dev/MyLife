@@ -9,6 +9,7 @@ import {
   resetWeekPlan,
 } from "./api.js";
 import type { MealSlot, WeekPlan, WeekPlanDay, WeekPlanEntryStatus, WeekPlanSlotAssignment } from "./api.js";
+import { useToast } from "./ToastProvider.js";
 
 const SLOT_LABELS: Record<MealSlot, string> = {
   "petit-dejeuner": "🌅 Petit-déjeuner",
@@ -52,6 +53,11 @@ export default function WeekPlanPage({ onBack }: { onBack: () => void }) {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [mode, setMode] = useState<"apercu" | "revue">("apercu");
   const [confirmingReset, setConfirmingReset] = useState(false);
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    if (error) showToast(error);
+  }, [error, showToast]);
 
   function load() {
     setLoading(true);
@@ -153,7 +159,6 @@ export default function WeekPlanPage({ onBack }: { onBack: () => void }) {
       </p>
 
       {loading && <p className="scan-status">Composition du planning…</p>}
-      {error && <p className="fridge-error">{error}</p>}
       {!loading && !weekPlan && reason && <p className="fridge-empty">{reason}</p>}
 
       {!loading && weekPlan && mode === "apercu" && (

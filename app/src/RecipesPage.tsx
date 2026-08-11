@@ -9,6 +9,8 @@ import {
 } from "./api.js";
 import type { MealSlot, RecipeSummary, RecipeDetail, RecipeDraft, RecipeIngredient, RecipeFilters } from "./api.js";
 import { MEAL_SLOTS } from "./api.js";
+import { useToast } from "./ToastProvider.js";
+import Skeleton from "./Skeleton.js";
 
 const CATEGORIES = ["Petit-déjeuner", "Plat", "Entrée", "Dessert", "Snack"];
 const DIFFICULTIES = ["facile", "moyen", "difficile"];
@@ -69,6 +71,11 @@ export default function RecipesPage({ onBack }: { onBack: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<RecipeFilters>({ sort: "likes" });
   const [selected, setSelected] = useState<RecipeDetail | null>(null);
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    if (error) showToast(error);
+  }, [error, showToast]);
   const [draft, setDraft] = useState<RecipeDraft>(emptyDraft());
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -363,8 +370,6 @@ export default function RecipesPage({ onBack }: { onBack: () => void }) {
           + Ajouter un ingrédient
         </button>
 
-        {error && <p className="fridge-error">{error}</p>}
-
         <div className="scan-actions">
           <button className="auth-submit" onClick={handleSave} disabled={saving || !canSave}>
             {saving ? "Enregistrement…" : "Enregistrer la recette"}
@@ -427,8 +432,6 @@ export default function RecipesPage({ onBack }: { onBack: () => void }) {
 
         <h3>Préparation</h3>
         <p className="recipe-instructions">{selected.instructions}</p>
-
-        {error && <p className="fridge-error">{error}</p>}
 
         {selected.isAuthor && (
           <div className="scan-actions">
@@ -530,8 +533,12 @@ export default function RecipesPage({ onBack }: { onBack: () => void }) {
         </select>
       </div>
 
-      {error && <p className="fridge-error">{error}</p>}
-      {recipes === null && !error && <p>Chargement…</p>}
+      {recipes === null && (
+        <div className="skeleton-stack">
+          <Skeleton height="120px" />
+          <Skeleton height="120px" />
+        </div>
+      )}
       {recipes !== null && recipes.length === 0 && <p className="fridge-empty">Aucune recette ne correspond à ces filtres.</p>}
 
       <div className="recipe-grid">
