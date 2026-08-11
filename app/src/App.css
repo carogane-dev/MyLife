@@ -2302,3 +2302,189 @@ h1, h2, h3, h4 {
     width: 320px;
   }
 }
+
+/* Séparation zone définitive / zone de test (accueil) */
+.home-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 2rem 0 1.25rem;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.home-divider::before,
+.home-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+/* Vue "Aujourd'hui" (DayOverview.tsx) */
+.day-overview {
+  margin-bottom: 1.5rem;
+}
+
+.day-overview h3 {
+  margin: 0 0 0.75rem;
+  font-size: var(--text-lg);
+}
+
+.day-overview-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.day-overview-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.5rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.day-overview-row:hover {
+  background: var(--color-surface-alt);
+}
+
+.day-overview-row.empty {
+  cursor: default;
+  color: var(--color-text-muted);
+}
+
+.day-overview-row.empty:hover {
+  background: transparent;
+}
+
+.day-overview-slot {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.day-overview-name {
+  flex: 1;
+  font-size: var(--text-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.day-overview-cal {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Panneau détail repas (MealDetailSheet.tsx) : bottom sheet mobile,
+   modale centrée desktop. */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(27, 36, 32, 0.4);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 500;
+}
+
+.sheet-panel {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: 1.25rem;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-elevated);
+}
+
+.sheet-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.sheet-header h3 {
+  margin: 0.15rem 0 0;
+}
+
+.sheet-slot-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sheet-close {
+  border: none;
+  background: var(--color-surface-alt);
+  border-radius: 999px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+}
+
+.sheet-totals {
+  display: flex;
+  gap: 1rem;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sheet-item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.sheet-item-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sheet-item-name {
+  font-size: var(--text-base);
+}
+
+.sheet-item-used,
+.sheet-item-remaining {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.sheet-item-empty {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+@media (min-width: 769px) {
+  .sheet-backdrop {
+    align-items: center;
+  }
+
+  .sheet-panel {
+    border-radius: var(--radius-lg);
+    max-width: 480px;
+    max-height: 70vh;
+  }
+}
