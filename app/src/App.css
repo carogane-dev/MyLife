@@ -24,6 +24,15 @@
   min-width: 0;
 }
 
+html, body {
+  /* Verrouille le geste tactile au scroll vertical uniquement : bloque le
+     pan horizontal et le pinch-to-zoom au niveau du navigateur (plus fiable
+     que le seul viewport meta, qui ne couvre pas tous les cas sur iOS
+     Safari) ; overflow-x en filet de sécurité si un élément déborde encore. */
+  touch-action: pan-y;
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   background: var(--color-bg);
