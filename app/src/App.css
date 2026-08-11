@@ -12,6 +12,16 @@
 
 * {
   box-sizing: border-box;
+  /* Sécurité anti-débordement horizontal : un nom de produit/recette/plat
+     sans espaces (code-barres, saisie libre) ne doit jamais forcer un
+     scroll horizontal sur petit écran. overflow-wrap seul ne suffit pas :
+     dans un conteneur flex, un enfant texte a par défaut min-width:auto
+     (= la largeur de son contenu non coupé), ce qui l'empêche de rétrécir
+     et donc de jamais entrer en wrap — min-width:0 lève cette contrainte.
+     La seule règle plus spécifique (min-width: 1.2rem sur un badge) reste
+     prioritaire grâce à la spécificité CSS, donc rien d'autre ne casse. */
+  overflow-wrap: break-word;
+  min-width: 0;
 }
 
 body {
@@ -43,6 +53,8 @@ body {
 .header-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 0.6rem;
 }
 
@@ -1900,4 +1912,38 @@ body {
   border-radius: var(--radius);
   border: 1px solid var(--color-border);
   object-fit: cover;
+}
+
+/* Mobile (iPhone SE ~375px et plus étroit) : resserre les marges et
+   agrandit les cibles tactiles plutôt que de réorganiser la mise en page —
+   la grille/flexbox existante s'adapte déjà correctement en largeur. */
+@media (max-width: 480px) {
+  .app {
+    padding: 1.25rem 1rem 3rem;
+  }
+
+  .app-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .app-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .hero {
+    padding: 1.5rem;
+  }
+
+  .feature-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .logout-button,
+  .fridge-add-button,
+  .fridge-item-action-button,
+  .settings-button,
+  .week-plan-mini-regen {
+    min-height: 2.5rem;
+  }
 }
