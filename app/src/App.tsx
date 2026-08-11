@@ -14,6 +14,7 @@ import WeekPlanPage from "./WeekPlanPage.js";
 import ScientificDataPage from "./ScientificDataPage.js";
 import GamificationSummary from "./GamificationSummary.js";
 import AddMealPage from "./AddMealPage.js";
+import HistoryPage from "./HistoryPage.js";
 import "./App.css";
 
 type ConnectionState = "checking" | "connected" | "error";
@@ -28,7 +29,8 @@ type Page =
   | "recipes"
   | "week-plan"
   | "scientific-data"
-  | "add-meal";
+  | "add-meal"
+  | "history";
 
 const FEATURES: { icon: string; title: string; description: string; page?: Page }[] = [
   {
@@ -71,6 +73,7 @@ const FEATURES: { icon: string; title: string; description: string; page?: Page 
     icon: "📖",
     title: "Historique",
     description: "Retrouve tous tes repas enregistrés.",
+    page: "history",
   },
   {
     icon: "📊",
@@ -200,6 +203,10 @@ export default function App() {
 
       {authState === "authenticated" && profile && page === "add-meal" && (
         <AddMealPage onBack={() => setPage("home")} />
+      )}
+
+      {authState === "authenticated" && profile && page === "history" && (
+        <HistoryPage onBack={() => setPage("home")} />
       )}
 
       {authState === "authenticated" && profile && page === "home" && (

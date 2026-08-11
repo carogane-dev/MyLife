@@ -1330,6 +1330,64 @@ body {
   text-transform: capitalize;
 }
 
+.history-day-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin: 1rem 0;
+}
+
+.history-day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.4rem;
+}
+
+.history-day-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  text-transform: capitalize;
+}
+
+.history-day-total {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.history-entry-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.history-entry-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.history-entry-slot {
+  font-size: 1.2rem;
+}
+
+.history-entry-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.history-entry-name {
+  color: var(--color-text);
+}
+
+.history-entry-macros {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
 /* Action "manger" sur un article du frigo */
 
 .fridge-item-action-button.eat {

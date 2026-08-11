@@ -41,6 +41,7 @@ export interface ConsumptionEntry {
   protein: number;
   fat: number;
   carbs: number;
+  mealSlot: MealSlot | null;
   consumedAt: string;
 }
 
