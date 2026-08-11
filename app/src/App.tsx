@@ -20,6 +20,7 @@ import AddMealPage from "./AddMealPage.js";
 import HistoryPage from "./HistoryPage.js";
 import BottomTabBar from "./BottomTabBar.js";
 import Skeleton from "./Skeleton.js";
+import DayOverview from "./DayOverview.js";
 import "./App.css";
 
 type ConnectionState = "checking" | "connected" | "error";
@@ -121,8 +122,13 @@ function HomeContent({
         </p>
       </section>
 
+      {profile.goalMode !== "frigo_only" && <DayOverview />}
       {profile.goalMode !== "frigo_only" && <HomeProgress profile={profile} />}
       <GamificationSummary />
+
+      <div className="home-divider">
+        <span>Fonctions en test</span>
+      </div>
 
       <section className="feature-grid">
         {FEATURES.map((feature) => (
