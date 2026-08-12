@@ -316,6 +316,14 @@ model WeekPlanEntry {
   status   String @default("proposed")
   attempts Int    @default(1)
 
+  // true si la recette actuelle a été choisie via un échange manuel
+  // (bannissement d'ingrédient, cf. routes/weekPlan.ts swap-confirm) plutôt
+  // que par le solveur ou un refus — épingle ce créneau au même titre que
+  // "attempts > 1" (voir buildPinnedAssignments) pour qu'un hydrate()
+  // ultérieur ne l'écrase pas silencieusement, sans pour autant compter
+  // comme un refus (jamais de RecipeDecision créée pour un swap).
+  swapped Boolean @default(false)
+
   decisions RecipeDecision[]
   updatedAt DateTime @updatedAt
 

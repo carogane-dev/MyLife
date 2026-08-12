@@ -3,9 +3,10 @@ import type { Response } from "express";
 import { prisma } from "../db.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { computeDailyBudget } from "../dailyBudget.js";
-import { generateWeekPlan } from "../weekPlanner.js";
+import { generateWeekPlan, ingredientNameExcludedRecipeIds } from "../weekPlanner.js";
 import type { WeekPlan } from "../weekPlanner.js";
 import { computeAffinityScores } from "../recipeMatcher.js";
+import { isNonEmptyString } from "../validation.js";
 
 export const weekPlanRouter = Router();
 
@@ -62,6 +63,7 @@ interface PersistedEntry {
   recipeId: string | null;
   status: string;
   attempts: number;
+  swapped: boolean;
 }
 
 // Seuls les créneaux "décidés" (acceptés, mangés, ou épuisés après 5 refus)
@@ -88,7 +90,7 @@ function buildPinnedAssignments(entries: PersistedEntry[], excludeEntryId?: stri
   const pinned = new Map<string, string>();
   for (const e of entries) {
     if (e.id === excludeEntryId) continue;
-    if (e.recipeId && (DECIDED_STATUSES.has(e.status) || e.attempts > 1)) {
+    if (e.recipeId && (DECIDED_STATUSES.has(e.status) || e.attempts > 1 || e.swapped)) {
       pinned.set(`${entryDateToIso(e.date)}|${e.slot}`, e.recipeId);
     }
   }
@@ -401,6 +403,126 @@ weekPlanRouter.post("/days/:date/regenerate-remaining", requireAuth, async (req,
 
   const refreshed = await prisma.weekPlan.findUniqueOrThrow({ where: { id: planRecord.id }, include: { entries: true } });
   await respondHydrated(res, refreshed, ctx);
+});
+
+// Aperçu non persisté d'un échange de repas par bannissement d'ingrédient(s) :
+// traduit les noms bannis en recettes exclues (voir
+// weekPlanner.ingredientNameExcludedRecipeIds), épingle tous les AUTRES
+// créneaux à leur recette actuelle, et retourne la meilleure recette
+// candidate pour CE créneau compte tenu de ces exclusions — sans rien
+// écrire en base. Contrairement à /reject, ne journalise aucune
+// RecipeDecision : "je n'ai pas cet ingrédient aujourd'hui" n'est pas un
+// jugement de goût sur la recette, donc ne doit jamais influencer
+// l'apprentissage des goûts (voir recipeMatcher.computeAffinityScores).
+weekPlanRouter.post("/entries/:entryId/swap-preview", requireAuth, async (req, res) => {
+  const entry = await prisma.weekPlanEntry.findUnique({ where: { id: req.params.entryId }, include: { weekPlan: true } });
+  if (!entry || entry.weekPlan.userId !== req.user!.id) {
+    res.status(404).json({ error: "Repas introuvable." });
+    return;
+  }
+  if (entry.status !== "proposed") {
+    res.status(400).json({ error: "Ce repas n'est plus en attente de décision." });
+    return;
+  }
+
+  const body = req.body ?? {};
+  const excludedIngredientNames = Array.isArray(body.excludedIngredientNames)
+    ? body.excludedIngredientNames.filter((n: unknown): n is string => isNonEmptyString(n))
+    : [];
+
+  const ctx = await loadContext(req.user!.id);
+  if (!ctx) {
+    res.status(200).json({ weekPlan: null, reason: NO_PROFILE_REASON });
+    return;
+  }
+
+  const allEntries = await prisma.weekPlan.findUniqueOrThrow({ where: { id: entry.weekPlanId }, include: { entries: true } });
+  const pinnedAssignments = buildPinnedAssignments(allEntries.entries, entry.id);
+  const excludeIds = ingredientNameExcludedRecipeIds(ctx.recipes, excludedIngredientNames);
+
+  const regenerated = generateWeekPlan(
+    ctx.recipes,
+    ctx.fridgeItems,
+    ctx.dailyTargets,
+    ctx.targets,
+    ctx.slotContext,
+    entry.weekPlan.startDate,
+    excludeIds,
+    pinnedAssignments,
+    ctx.affinityScores
+  );
+  const dateStr = entryDateToIso(entry.date);
+  const match = regenerated.days.find((d) => d.date === dateStr)?.slots.find((s) => s.slot === entry.slot)?.match ?? null;
+
+  res.status(200).json({ match });
+});
+
+// Confirme un échange de repas : fixe ce créneau sur la recette choisie
+// (renvoyée par un appel précédent à swap-preview), en recalculant ses
+// quantités contre le budget réel du créneau via le même mécanisme
+// d'épinglage que pour un créneau déjà décidé — jamais de confiance
+// aveugle dans le match potentiellement périmé renvoyé par le preview.
+// Comme swap-preview, ne journalise aucune RecipeDecision et ne touche pas
+// au compteur `attempts` : ce n'est pas un refus, le statut reste
+// "proposed" (accepter/refuser s'appliquent ensuite normalement).
+weekPlanRouter.post("/entries/:entryId/swap-confirm", requireAuth, async (req, res) => {
+  const entry = await prisma.weekPlanEntry.findUnique({ where: { id: req.params.entryId }, include: { weekPlan: true } });
+  if (!entry || entry.weekPlan.userId !== req.user!.id) {
+    res.status(404).json({ error: "Repas introuvable." });
+    return;
+  }
+  if (entry.status !== "proposed") {
+    res.status(400).json({ error: "Ce repas n'est plus en attente de décision." });
+    return;
+  }
+
+  const body = req.body ?? {};
+  if (!isNonEmptyString(body.recipeId)) {
+    res.status(400).json({ error: "Recette invalide." });
+    return;
+  }
+
+  const ctx = await loadContext(req.user!.id);
+  if (!ctx) {
+    res.status(200).json({ weekPlan: null, reason: NO_PROFILE_REASON });
+    return;
+  }
+
+  const recipe = ctx.recipes.find((r) => r.id === body.recipeId);
+  if (!recipe || !recipe.compatibleSlots.includes(entry.slot)) {
+    res.status(400).json({ error: "Cette recette n'est pas compatible avec ce créneau." });
+    return;
+  }
+
+  const allEntries = await prisma.weekPlan.findUniqueOrThrow({ where: { id: entry.weekPlanId }, include: { entries: true } });
+  const pinnedAssignments = buildPinnedAssignments(allEntries.entries, entry.id);
+  pinnedAssignments.set(`${entryDateToIso(entry.date)}|${entry.slot}`, recipe.id);
+
+  const regenerated = generateWeekPlan(
+    ctx.recipes,
+    ctx.fridgeItems,
+    ctx.dailyTargets,
+    ctx.targets,
+    ctx.slotContext,
+    entry.weekPlan.startDate,
+    new Set(),
+    pinnedAssignments,
+    ctx.affinityScores
+  );
+  const dateStr = entryDateToIso(entry.date);
+  const newMatch = regenerated.days.find((d) => d.date === dateStr)?.slots.find((s) => s.slot === entry.slot)?.match ?? null;
+  if (!newMatch) {
+    res.status(400).json({ error: "Impossible de composer ce repas avec cette recette." });
+    return;
+  }
+
+  await prisma.weekPlanEntry.update({
+    where: { id: entry.id },
+    data: { recipeId: newMatch.recipeId, status: "proposed", swapped: true },
+  });
+
+  const planRecord = await prisma.weekPlan.findUniqueOrThrow({ where: { id: entry.weekPlanId }, include: { entries: true } });
+  await respondHydrated(res, planRecord, ctx);
 });
 
 // Supprime le planning courant (cascade sur ses créneaux ; les décisions

@@ -417,6 +417,35 @@ export async function markWeekPlanEntryEaten(entryId: string): Promise<WeekPlanR
   return parseJsonOrThrow(res);
 }
 
+// Aperçu non persisté d'un échange de repas en bannissant un ou plusieurs
+// ingrédients — n'affecte jamais l'apprentissage des goûts (voir
+// swap-preview côté backend). `match` vaut null si aucune autre recette
+// compatible ne reste avec ces exclusions.
+export async function previewWeekPlanEntrySwap(
+  entryId: string,
+  excludedIngredientNames: string[]
+): Promise<{ match: RecipeMatch | null }> {
+  const res = await fetch(`${API_BASE_URL}/api/week-plan/entries/${encodeURIComponent(entryId)}/swap-preview`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ excludedIngredientNames }),
+  });
+  return parseJsonOrThrow(res);
+}
+
+// Confirme l'échange : fixe ce créneau sur la recette prévisualisée. Le
+// statut reste "proposed" (accepter/refuser s'appliquent ensuite).
+export async function confirmWeekPlanEntrySwap(entryId: string, recipeId: string): Promise<WeekPlanResult> {
+  const res = await fetch(`${API_BASE_URL}/api/week-plan/entries/${encodeURIComponent(entryId)}/swap-confirm`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ recipeId }),
+  });
+  return parseJsonOrThrow(res);
+}
+
 // Applique la même logique que le refus à tous les créneaux encore
 // "proposed" de ce jour (ignore les créneaux déjà acceptés/mangés/épuisés).
 export async function regenerateWeekPlanDay(date: string): Promise<WeekPlanResult> {
