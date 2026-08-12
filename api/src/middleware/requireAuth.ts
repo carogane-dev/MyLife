@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { clearSessionCookie, getSessionUser, SESSION_COOKIE_NAME } from "../auth.js";
+import { clearSessionCookie, extractSessionToken, getSessionUser } from "../auth.js";
 
 declare global {
   namespace Express {
@@ -10,7 +10,7 @@ declare global {
 }
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
-  const token = req.signedCookies?.[SESSION_COOKIE_NAME];
+  const token = extractSessionToken(req);
   if (!token) {
     res.status(401).json({ error: "Non authentifié" });
     return;

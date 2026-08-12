@@ -5,8 +5,8 @@ import {
   clearSessionCookie,
   createSession,
   deleteSession,
+  extractSessionToken,
   hashPassword,
-  SESSION_COOKIE_NAME,
   setSessionCookie,
   verifyDummyPassword,
   verifyPassword,
@@ -40,6 +40,16 @@ function toPublicUser(user: { id: string; email: string; createdAt: Date }) {
   return { id: user.id, email: user.email, createdAt: user.createdAt };
 }
 
+// L'app desktop (Tauri) ne peut pas compter sur le cookie de session
+// (SameSite=Lax, cross-site entre l'origine du front packagé et celle du
+// back-end — voir extractSessionToken dans auth.ts) : elle envoie cet
+// en-tête pour recevoir aussi le token en clair dans le corps JSON, qu'elle
+// renverra ensuite via Authorization. Jamais envoyé par le navigateur/PWA,
+// qui reste protégé par le cookie httpOnly uniquement.
+function isTauriClient(req: { headers: Record<string, unknown> }): boolean {
+  return req.headers["x-tauri-client"] === "1";
+}
+
 authRouter.post("/signup", signupLimiter, async (req, res) => {
   const { email, password } = req.body ?? {};
 
@@ -67,7 +77,7 @@ authRouter.post("/signup", signupLimiter, async (req, res) => {
 
   const { token, expiresAt } = await createSession(user.id);
   setSessionCookie(res, token, expiresAt);
-  res.status(201).json({ user: toPublicUser(user) });
+  res.status(201).json({ user: toPublicUser(user), sessionToken: isTauriClient(req) ? token : undefined });
 });
 
 authRouter.post("/login", loginLimiter, async (req, res) => {
@@ -92,11 +102,11 @@ authRouter.post("/login", loginLimiter, async (req, res) => {
 
   const { token, expiresAt } = await createSession(user.id);
   setSessionCookie(res, token, expiresAt);
-  res.status(200).json({ user: toPublicUser(user) });
+  res.status(200).json({ user: toPublicUser(user), sessionToken: isTauriClient(req) ? token : undefined });
 });
 
 authRouter.post("/logout", async (req, res) => {
-  const token = req.signedCookies?.[SESSION_COOKIE_NAME];
+  const token = extractSessionToken(req);
   if (token) {
     await deleteSession(token);
   }
