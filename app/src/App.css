@@ -2364,6 +2364,44 @@ h1, h2, h3, h4 {
   background: transparent;
 }
 
+.fridge-autonomy {
+  margin-bottom: 1.5rem;
+}
+
+.fridge-autonomy h3 {
+  margin: 0 0 0.5rem;
+  font-size: var(--text-lg);
+}
+
+.fridge-autonomy-headline {
+  margin: 0 0 0.2rem;
+  font-size: var(--text-base);
+}
+
+.fridge-autonomy-detail {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.fridge-autonomy.warning {
+  border: 1px solid var(--color-warning);
+}
+
+.fridge-autonomy-warning {
+  margin: 0.6rem 0 0;
+  color: var(--color-warning);
+  font-size: var(--text-sm);
+}
+
+.courses-to-build {
+  margin-bottom: 1.5rem;
+}
+
+.courses-to-build h3 {
+  margin: 0 0 0.4rem;
+}
+
 .day-overview-slot {
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
