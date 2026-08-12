@@ -18,9 +18,11 @@ import ScientificDataPage from "./ScientificDataPage.js";
 import GamificationSummary from "./GamificationSummary.js";
 import AddMealPage from "./AddMealPage.js";
 import HistoryPage from "./HistoryPage.js";
+import CoursesPage from "./CoursesPage.js";
 import BottomTabBar from "./BottomTabBar.js";
 import Skeleton from "./Skeleton.js";
 import DayOverview from "./DayOverview.js";
+import FridgeAutonomyWidget from "./FridgeAutonomyWidget.js";
 import "./App.css";
 
 type ConnectionState = "checking" | "connected" | "error";
@@ -63,6 +65,12 @@ const FEATURES: Feature[] = [
     title: "Planning de la semaine",
     description: "Compose automatiquement tes 21 prochains repas.",
     path: "/week-plan",
+  },
+  {
+    icon: "🛒",
+    title: "Courses",
+    description: "Ce qu'il te manque pour la semaine, et les repas à construire toi-même.",
+    path: "/courses",
   },
   {
     icon: "📷",
@@ -123,6 +131,7 @@ function HomeContent({
       </section>
 
       {profile.goalMode !== "frigo_only" && <DayOverview />}
+      {profile.goalMode !== "frigo_only" && <FridgeAutonomyWidget />}
       {profile.goalMode !== "frigo_only" && <HomeProgress profile={profile} />}
       <GamificationSummary />
 
@@ -252,6 +261,7 @@ export default function App() {
             <Route path="/meal-builder" element={<MealBuilderPage onBack={goHome} />} />
             <Route path="/recipes" element={<RecipesPage onBack={goHome} />} />
             <Route path="/week-plan" element={<WeekPlanPage onBack={goHome} />} />
+            <Route path="/courses" element={<CoursesPage onBack={goHome} />} />
             <Route path="/scientific-data" element={<ScientificDataPage onBack={goHome} />} />
             <Route path="/add-meal" element={<AddMealPage onBack={goHome} />} />
             <Route path="/history" element={<HistoryPage onBack={goHome} />} />
