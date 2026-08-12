@@ -1,6 +1,6 @@
 import { filterByCapacity, matchRecipeToBudget } from "./recipeMatcher.js";
 import type { MacroRatioBounds, RecipeAffinityMap, RecipeInput, RecipeMatch } from "./recipeMatcher.js";
-import { MEAL_SLOTS, normalizedSlotShare } from "./mealSlots.js";
+import { MEAL_SLOTS, MEAL_SLOT_ROLE_CONFIG, normalizedSlotShare } from "./mealSlots.js";
 import type { MealSlot } from "./mealSlots.js";
 import { computeFloor } from "./mealBudgetMath.js";
 import type { MacroTargets } from "./mealBudgetMath.js";
@@ -14,6 +14,16 @@ export interface FridgeStockItem {
   quantity: number;
   unit: string;
   unitWeightGrams: number | null;
+  // Champs supplémentaires (déjà présents sur le FridgeItem Prisma passé en
+  // pratique par routes/weekPlan.ts, simplement pas encore déclarés ici) —
+  // nécessaires pour la priorisation par date de péremption (voir
+  // expiryUrgencyBonus) : jamais utilisés pour la couverture de stock
+  // existante (buildShoppingList), qui continue à ne dépendre que des 5
+  // champs ci-dessus.
+  expiresAt: Date;
+  category: string;
+  subcategory: string;
+  compatibleSlots: string[];
 }
 
 export interface MissingIngredient {
@@ -96,6 +106,47 @@ function matchesIngredientName(ingredientName: string, fridgeName: string): bool
 
 function toIsoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
+}
+
+// Fenêtre de péremption jugée "urgente" — alignée sur l'horizon de
+// planification (7 jours) : au-delà, pas de raison de bousculer le choix
+// habituel par fitScore/variété. Bonus max arbitraire, du même ordre de
+// grandeur que VARIETY_PENALTY_PER_USE mais volontairement plus fort : la
+// péremption doit pouvoir l'emporter sur une pénalité de variété simple,
+// pas sur un fitScore très défavorable (jamais assez fort pour l'emporter
+// sur filterByCapacity/ratioBounds, qui s'appliquent en amont).
+const EXPIRY_URGENCY_WINDOW_DAYS = 7;
+const EXPIRY_URGENCY_MAX_BONUS = 0.6;
+
+// Bonus de score (à SOUSTRAIRE de adjustedScore, plus bas = mieux classé)
+// pour une recette utilisant un ingrédient du frigo qui périme bientôt —
+// mais seulement si cet article est catégoriquement compatible avec CE
+// créneau : son propre compatibleSlots (choisi par l'utilisateur) doit
+// inclure ce créneau, ET s'il s'agit d'une protéine, sa sous-catégorie ne
+// doit pas figurer dans la pénalité du créneau (MEAL_SLOT_ROLE_CONFIG) —
+// cette pénalité, une simple déprioritisation ailleurs (mealBuilder.ts),
+// devient ici un filtre dur : jamais prioriser du bœuf périssable au
+// petit-déjeuner, cohérent avec la demande explicite (section 4). Ne
+// force jamais l'insertion d'un ingrédient sans créneau compatible avant
+// péremption : dans ce cas, aucune recette n'obtient de bonus pour lui, il
+// reste simplement non utilisé (visible ensuite comme non couvert).
+function expiryUrgencyBonus(recipe: RecipeInput, fridgeItems: FridgeStockItem[], slot: MealSlot, dayDate: Date): number {
+  let best = 0;
+  for (const ingredient of recipe.ingredients) {
+    for (const item of fridgeItems) {
+      if (!matchesIngredientName(ingredient.name, item.name)) continue;
+      if (!item.compatibleSlots.includes(slot)) continue;
+      const isProtein = item.category === "Viande" || item.category === "Poisson";
+      if (isProtein && MEAL_SLOT_ROLE_CONFIG[slot].proteinPenaltySubcategories.has(item.subcategory)) continue;
+
+      const daysLeft = (item.expiresAt.getTime() - dayDate.getTime()) / 86_400_000;
+      if (daysLeft < 0 || daysLeft > EXPIRY_URGENCY_WINDOW_DAYS) continue;
+
+      const bonus = EXPIRY_URGENCY_MAX_BONUS * (1 - daysLeft / EXPIRY_URGENCY_WINDOW_DAYS);
+      if (bonus > best) best = bonus;
+    }
+  }
+  return best;
 }
 
 // Compose les 7 prochains jours (J+1 à J+7 à partir de startDate) × 3
@@ -181,6 +232,7 @@ export function generateWeekPlan(
 
   for (let d = 0; d < 7; d++) {
     const isoDate = isoDates[d];
+    const dayDate = new Date(`${isoDate}T00:00:00.000Z`);
 
     let consumedSoFar: MacroTargets = { calories: 0, protein: 0, fat: 0, carbs: 0 };
 
@@ -241,8 +293,16 @@ export function generateWeekPlan(
           // un plafond dur bien en-dessous du besoin) — voir
           // recipeMatcher.filterByCapacity.
           const capable = filterByCapacity(candidates, mealBudget.calories);
+          const recipeById = new Map(capable.map((r) => [r.id, r]));
           const matches = capable.map((r) => matchRecipeToBudget(r, mealBudget, dailyTargets, ratioBounds, affinityScores));
-          const adjustedScore = (m: RecipeMatch) => m.fitScore + (usageCount.get(m.recipeId) ?? 0) * VARIETY_PENALTY_PER_USE;
+          const adjustedScore = (m: RecipeMatch) => {
+            const recipe = recipeById.get(m.recipeId)!;
+            return (
+              m.fitScore +
+              (usageCount.get(m.recipeId) ?? 0) * VARIETY_PENALTY_PER_USE -
+              expiryUrgencyBonus(recipe, fridgeItems, slot, dayDate)
+            );
+          };
           matches.sort((a, b) => adjustedScore(a) - adjustedScore(b));
           bestMatch = matches[0];
         }
