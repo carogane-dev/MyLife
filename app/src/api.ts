@@ -13,7 +13,37 @@ import type { NutritionModeConfigEntry, NutritionTargets } from "./nutritionCalc
 // `__TAURI_INTERNALS__` est injecté par Tauri dans la fenêtre, dev comme
 // build : on bascule dans les deux cas sur une URL absolue, plus robuste
 // que de ne le faire qu'en build.
-const API_BASE_URL = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window ? "http://localhost:3001" : "";
+const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+const API_BASE_URL = IS_TAURI ? "http://localhost:3001" : "";
+
+// Le cookie de session (SameSite=Lax, voir api/src/auth.ts) n'est jamais
+// envoyé par la fenêtre Tauri : son origine (http://tauri.localhost) est
+// différente de celle du back-end (http://localhost:3001), et SameSite=Lax
+// bloque l'envoi d'un cookie sur une requête cross-site qui n'est pas une
+// navigation top-level — credentials:"include" n'y change rien. Pour ce
+// client uniquement, le back-end renvoie aussi le token en clair (voir
+// X-Tauri-Client plus bas), stocké ici et renvoyé via Authorization sur
+// CHAQUE requête (fetch global patché ci-dessous) — jamais utilisé par le
+// navigateur/PWA, qui reste protégé par le cookie httpOnly seul.
+const TAURI_TOKEN_STORAGE_KEY = "monapp_session_token";
+let tauriSessionToken: string | null = IS_TAURI ? localStorage.getItem(TAURI_TOKEN_STORAGE_KEY) : null;
+
+function storeTauriSessionToken(token: string | null) {
+  tauriSessionToken = token;
+  if (!IS_TAURI) return;
+  if (token) localStorage.setItem(TAURI_TOKEN_STORAGE_KEY, token);
+  else localStorage.removeItem(TAURI_TOKEN_STORAGE_KEY);
+}
+
+if (IS_TAURI && typeof window !== "undefined") {
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = (input, init = {}) => {
+    const headers = new Headers(init.headers);
+    headers.set("X-Tauri-Client", "1");
+    if (tauriSessionToken) headers.set("Authorization", `Bearer ${tauriSessionToken}`);
+    return originalFetch(input, { ...init, headers });
+  };
+}
 
 export interface User {
   id: string;
@@ -161,7 +191,9 @@ export async function signUp(email: string, password: string): Promise<{ user: U
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
-  return parseJsonOrThrow(res);
+  const body = await parseJsonOrThrow(res);
+  storeTauriSessionToken(body.sessionToken ?? null);
+  return body;
 }
 
 export async function signIn(email: string, password: string): Promise<{ user: User }> {
@@ -171,7 +203,9 @@ export async function signIn(email: string, password: string): Promise<{ user: U
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
-  return parseJsonOrThrow(res);
+  const body = await parseJsonOrThrow(res);
+  storeTauriSessionToken(body.sessionToken ?? null);
+  return body;
 }
 
 export async function signOut(): Promise<void> {
@@ -180,6 +214,7 @@ export async function signOut(): Promise<void> {
     credentials: "include",
   });
   await parseJsonOrThrow(res);
+  storeTauriSessionToken(null);
 }
 
 export async function getMe(): Promise<User | null> {

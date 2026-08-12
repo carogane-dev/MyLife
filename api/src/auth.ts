@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import bcrypt from "bcrypt";
-import type { Response } from "express";
+import type { Request, Response } from "express";
 import { prisma } from "./db.js";
 
 const BCRYPT_COST = 12;
@@ -66,4 +66,19 @@ export function setSessionCookie(res: Response, token: string, expiresAt: Date) 
 
 export function clearSessionCookie(res: Response) {
   res.clearCookie(SESSION_COOKIE_NAME, { ...cookieOptions(0), maxAge: undefined });
+}
+
+// L'app desktop (Tauri) charge le front depuis une origine différente
+// (http://tauri.localhost) de celle du back-end (http://localhost:3001) :
+// le cookie de session (SameSite=Lax) n'est jamais envoyé sur ces requêtes
+// cross-site, même avec credentials:"include" — seule une navigation
+// top-level enverrait un cookie SameSite=Lax cross-site. Pour ce client
+// uniquement (signalé par l'en-tête X-Tauri-Client, voir routes/auth.ts),
+// le token brut est aussi renvoyé dans le corps JSON de connexion et
+// accepté ici via `Authorization: Bearer <token>` — jamais utilisé par le
+// navigateur/PWA, qui continue de dépendre uniquement du cookie httpOnly.
+export function extractSessionToken(req: Request): string | null {
+  const header = req.headers.authorization;
+  if (header?.startsWith("Bearer ")) return header.slice(7);
+  return req.signedCookies?.[SESSION_COOKIE_NAME] ?? null;
 }
