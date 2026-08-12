@@ -118,7 +118,12 @@ async function createFreshWeekPlan(userId: string, ctx: WeekPlanContext) {
             date: isoToEntryDate(day.date),
             slot: s.slot,
             recipeId: s.match ? s.match.recipeId : null,
-            status: "proposed",
+            // Aucune recette compatible trouvée dès la création : le
+            // signaler comme "exhausted" plutôt que "proposed" avec
+            // recipeId null, qui laissait ce créneau silencieusement vide
+            // sans statut clair (voir section 8 — ne jamais forcer un repas
+            // incohérent, mais ne jamais non plus masquer l'absence de repas).
+            status: s.match ? "proposed" : "exhausted",
             attempts: 1,
           }))
         ),
@@ -168,9 +173,19 @@ async function hydrate(
       const entry = entryByKey.get(`${day.date}|${s.slot}`);
       if (entry && entry.status === "proposed") {
         const newRecipeId = s.match?.recipeId ?? null;
-        if (newRecipeId !== entry.recipeId) {
-          updates.push(prisma.weekPlanEntry.update({ where: { id: entry.id }, data: { recipeId: newRecipeId } }));
+        // Un créneau "proposed" qui ne trouve plus aucune recette compatible
+        // au recalcul (pool épuisé par la variété/adjacence ce jour-là) doit
+        // passer "exhausted" — jamais rester "proposed" avec recipeId null,
+        // qui masquait ce cas sans statut clair (section 8). Reste
+        // récupérable : sans recipeId, buildPinnedAssignments ne l'épingle
+        // pas, donc un hydrate() ultérieur retente normalement.
+        const newStatus = newRecipeId ? "proposed" : "exhausted";
+        if (newRecipeId !== entry.recipeId || newStatus !== entry.status) {
+          updates.push(
+            prisma.weekPlanEntry.update({ where: { id: entry.id }, data: { recipeId: newRecipeId, status: newStatus } })
+          );
           entry.recipeId = newRecipeId;
+          entry.status = newStatus;
         }
       }
       return {
