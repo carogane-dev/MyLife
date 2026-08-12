@@ -104,6 +104,26 @@ function matchesIngredientName(ingredientName: string, fridgeName: string): bool
   return a.includes(b) || b.includes(a);
 }
 
+// Traduit une liste de noms d'ingrédients "bannis" (saisis par l'utilisateur
+// via le swap d'un repas, voir routes/weekPlan.ts swap-preview/swap-confirm)
+// en un ensemble d'ids de recettes à exclure — nécessaire car ce moteur
+// choisit toujours une recette ENTIÈRE, jamais un ingrédient isolé : une
+// recette dont au moins un ingrédient (libre ou du socle fixe) correspond à
+// un nom banni est entièrement écartée des candidats. Volontairement
+// permissif comme matchesIngredientName dont il dépend (même imprécision
+// assumée).
+export function ingredientNameExcludedRecipeIds(recipes: RecipeInput[], excludedIngredientNames: string[]): Set<string> {
+  const ids = new Set<string>();
+  if (excludedIngredientNames.length === 0) return ids;
+  for (const recipe of recipes) {
+    const hasExcluded = recipe.ingredients.some((ing) =>
+      excludedIngredientNames.some((banned) => matchesIngredientName(ing.name, banned))
+    );
+    if (hasExcluded) ids.add(recipe.id);
+  }
+  return ids;
+}
+
 function toIsoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }

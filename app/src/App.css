@@ -2488,3 +2488,46 @@ h1, h2, h3, h4 {
     max-height: 70vh;
   }
 }
+
+.swap-chip-list {
+  list-style: none;
+  margin: 0.75rem 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.swap-chip {
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.swap-chip.excluded {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: white;
+  text-decoration: line-through;
+}
+
+.swap-preview {
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.swap-preview h4 {
+  margin: 0 0 0.4rem;
+}
+
+.week-plan-review-swap {
+  display: block;
+  width: 100%;
+  margin-top: 0.6rem;
+  text-align: center;
+}

@@ -10,6 +10,7 @@ import {
 } from "./api.js";
 import type { MealSlot, WeekPlan, WeekPlanDay, WeekPlanEntryStatus, WeekPlanSlotAssignment } from "./api.js";
 import { useToast } from "./ToastProvider.js";
+import SwapSheet from "./SwapSheet.js";
 
 const SLOT_LABELS: Record<MealSlot, string> = {
   "petit-dejeuner": "🌅 Petit-déjeuner",
@@ -53,6 +54,7 @@ export default function WeekPlanPage({ onBack }: { onBack: () => void }) {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [mode, setMode] = useState<"apercu" | "revue">("apercu");
   const [confirmingReset, setConfirmingReset] = useState(false);
+  const [swapTarget, setSwapTarget] = useState<{ entryId: string; match: NonNullable<WeekPlanSlotAssignment["match"]>; slotLabel: string } | null>(null);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -132,6 +134,12 @@ export default function WeekPlanPage({ onBack }: { onBack: () => void }) {
 
   function handleRegenerateDay(date: string) {
     void runAction(`day:${date}`, () => regenerateWeekPlanDay(date));
+  }
+
+  function handleSwapConfirmed(result: WeekPlan | null, reason?: string) {
+    setWeekPlan(result);
+    setReason(reason ?? null);
+    setSwapTarget(null);
   }
 
   function handleReset() {
@@ -239,6 +247,21 @@ export default function WeekPlanPage({ onBack }: { onBack: () => void }) {
                               {busyKey === `eat:${assignment.entryId}` ? "…" : "✅ Manger ce repas"}
                             </button>
                           )}
+                          {assignment.status === "proposed" && assignment.match && (
+                            <button
+                              className="week-plan-mini-regen"
+                              onClick={() =>
+                                setSwapTarget({
+                                  entryId: assignment.entryId,
+                                  match: assignment.match!,
+                                  slotLabel: `${formatDate(day.date)} · ${SLOT_LABELS[assignment.slot]}`,
+                                })
+                              }
+                              disabled={!!busyKey}
+                            >
+                              🔄 Échanger un ingrédient
+                            </button>
+                          )}
                         </div>
 
                         {assignment.match && assignment.missingIngredients.length > 0 && (
@@ -343,6 +366,21 @@ export default function WeekPlanPage({ onBack }: { onBack: () => void }) {
                 {busyKey === `accept:${current.slot.entryId}` ? "…" : "✅ Accepter"}
               </button>
             </div>
+            {current.slot.match && (
+              <button
+                className="week-plan-mini-regen week-plan-review-swap"
+                onClick={() =>
+                  setSwapTarget({
+                    entryId: current.slot.entryId,
+                    match: current.slot.match!,
+                    slotLabel: `${formatDate(current.day.date)} · ${SLOT_LABELS[current.slot.slot]}`,
+                  })
+                }
+                disabled={!!busyKey}
+              >
+                🔄 Échanger un ingrédient plutôt que refuser
+              </button>
+            )}
             {current.slot.attempts >= 4 && (
               <p className="week-plan-review-attempts-warning">
                 Essai {current.slot.attempts} / 5 — après 5 refus, ce créneau sera marqué "à ajuster manuellement".
@@ -350,6 +388,16 @@ export default function WeekPlanPage({ onBack }: { onBack: () => void }) {
             )}
           </div>
         </div>
+      )}
+
+      {swapTarget && (
+        <SwapSheet
+          entryId={swapTarget.entryId}
+          initialMatch={swapTarget.match}
+          slotLabel={swapTarget.slotLabel}
+          onCancel={() => setSwapTarget(null)}
+          onConfirmed={handleSwapConfirmed}
+        />
       )}
     </div>
   );
