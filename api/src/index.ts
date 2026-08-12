@@ -15,9 +15,16 @@ import { gamificationRouter } from "./routes/gamification.js";
 import { mealsRouter } from "./routes/meals.js";
 
 const app = express();
+// CORS_ORIGIN accepte une liste séparée par des virgules — nécessaire dès
+// qu'on ajoute un second frontend (ex. l'app desktop Tauri packagée, voir
+// app/src-tauri/) qui ne charge plus depuis http://localhost:5173 mais
+// depuis son propre protocole interne (ex. https://tauri.localhost sur
+// Windows) : à renseigner dans api/.env le jour où `tauri build` est
+// réellement testé (voir CLAUDE.md, section packaging desktop).
+const corsOrigins = (process.env.CORS_ORIGIN ?? "http://localhost:5173").split(",").map((o) => o.trim());
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN ?? "http://localhost:5173",
+    origin: corsOrigins,
     credentials: true,
   })
 );

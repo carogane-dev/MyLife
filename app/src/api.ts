@@ -1,9 +1,19 @@
 import type { NutritionModeConfigEntry, NutritionTargets } from "./nutritionCalculator.js";
 
-// Chemin relatif : passe par le proxy Vite (voir vite.config.ts) qui redirige
-// /api vers le back-end. Fonctionne pareil en local, sur le réseau local
-// (IP du PC) ou via un tunnel HTTPS, sans jamais coder une adresse en dur.
-const API_BASE_URL = "";
+// Chemin relatif par défaut : passe par le proxy Vite (voir vite.config.ts)
+// qui redirige /api vers le back-end. Fonctionne pareil en local, sur le
+// réseau local (IP du PC) ou via un tunnel HTTPS, sans jamais coder une
+// adresse en dur.
+//
+// Exception : la fenêtre Tauri (desktop, voir src-tauri/) ne passe jamais
+// par ce proxy — même en `tauri dev` où elle affiche la devUrl Vite, le
+// fetch reste possible en relatif, mais après `tauri build` le front est
+// embarqué et servi par un protocole interne à Tauri, sans aucun proxy vers
+// le port 3001. Un chemin relatif ne peut alors plus atteindre le back-end.
+// `__TAURI_INTERNALS__` est injecté par Tauri dans la fenêtre, dev comme
+// build : on bascule dans les deux cas sur une URL absolue, plus robuste
+// que de ne le faire qu'en build.
+const API_BASE_URL = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window ? "http://localhost:3001" : "";
 
 export interface User {
   id: string;
