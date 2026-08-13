@@ -1,5 +1,7 @@
+import { Flame, Beef, Droplet, Wheat } from "lucide-react";
 import type { NutritionTargets } from "./nutritionCalculator.js";
 import type { ConsumptionEntry } from "./api.js";
+import MacroRing from "./MacroRing.js";
 
 export interface ConsumedTotals {
   calories: number;
@@ -20,40 +22,6 @@ export function sumConsumption(entries: ConsumptionEntry[]): ConsumedTotals {
   );
 }
 
-function ProgressBar({
-  icon,
-  label,
-  consumed,
-  target,
-  unit,
-}: {
-  icon: string;
-  label: string;
-  consumed: number;
-  target: number;
-  unit: string;
-}) {
-  const pct = target > 0 ? Math.min(100, Math.round((consumed / target) * 100)) : 0;
-  const over = consumed > target;
-  return (
-    <div className="progress-bar-row">
-      <div className="progress-bar-label">
-        <span>
-          {icon} {label}
-        </span>
-        <span>
-          {Math.round(consumed)}
-          {unit} / {Math.round(target)}
-          {unit}
-        </span>
-      </div>
-      <div className="progress-bar-track">
-        <div className={`progress-bar-fill ${over ? "over" : ""}`} style={{ width: `${pct}%` }} />
-      </div>
-    </div>
-  );
-}
-
 export default function DailyProgress({
   targets,
   consumed,
@@ -63,13 +31,49 @@ export default function DailyProgress({
   consumed: ConsumedTotals;
   compact?: boolean;
 }) {
+  const size = compact ? 60 : 76;
+  const iconSize = compact ? 16 : 18;
   return (
     <div className={`daily-progress ${compact ? "compact" : ""}`}>
-      {!compact && <h3>🎮 Progression du jour</h3>}
-      <ProgressBar icon="🔥" label="Calories" consumed={consumed.calories} target={targets.targetCalories} unit=" kcal" />
-      <ProgressBar icon="🥩" label="Protéines" consumed={consumed.protein} target={targets.targetProteinG} unit="g" />
-      <ProgressBar icon="🥑" label="Lipides" consumed={consumed.fat} target={targets.targetFatG} unit="g" />
-      <ProgressBar icon="🌾" label="Glucides" consumed={consumed.carbs} target={targets.targetCarbsG} unit="g" />
+      {!compact && <h3>Progression du jour</h3>}
+      <div className="macro-ring-row">
+        <MacroRing
+          value={consumed.calories}
+          target={targets.targetCalories}
+          size={size}
+          color="var(--ring-calories)"
+          icon={<Flame size={iconSize} />}
+          label="Calories"
+          valueLabel={`${Math.round(consumed.calories)}`}
+        />
+        <MacroRing
+          value={consumed.protein}
+          target={targets.targetProteinG}
+          size={size}
+          color="var(--ring-protein)"
+          icon={<Beef size={iconSize} />}
+          label="Protéines"
+          valueLabel={`${Math.round(consumed.protein)}g`}
+        />
+        <MacroRing
+          value={consumed.fat}
+          target={targets.targetFatG}
+          size={size}
+          color="var(--ring-fat)"
+          icon={<Droplet size={iconSize} />}
+          label="Lipides"
+          valueLabel={`${Math.round(consumed.fat)}g`}
+        />
+        <MacroRing
+          value={consumed.carbs}
+          target={targets.targetCarbsG}
+          size={size}
+          color="var(--ring-carbs)"
+          icon={<Wheat size={iconSize} />}
+          label="Glucides"
+          valueLabel={`${Math.round(consumed.carbs)}g`}
+        />
+      </div>
     </div>
   );
 }

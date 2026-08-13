@@ -3,6 +3,7 @@ import { getConsumptionEntries, getFridgeItems, getMealSuggestion } from "./api.
 import type { ConsumptionEntry, FridgeItem, MealSlot } from "./api.js";
 import Card from "./Card.js";
 import MealDetailSheet from "./MealDetailSheet.js";
+import DishIconTile from "./DishIconTile.js";
 
 const SLOT_LABELS: Record<MealSlot, string> = {
   "petit-dejeuner": "🌅 Petit-déjeuner",
@@ -149,8 +150,11 @@ export default function DayOverview() {
               className={`day-overview-row ${s.kind}`}
               onClick={() => (s.kind !== "empty" ? setSelected(s) : undefined)}
             >
-              <span className="day-overview-slot">{SLOT_LABELS[s.slot]}</span>
-              <span className="day-overview-name">{s.name}</span>
+              {s.kind !== "empty" && <DishIconTile name={s.name} size={36} />}
+              <div className="day-overview-text">
+                <span className="day-overview-slot">{SLOT_LABELS[s.slot]}</span>
+                <span className="day-overview-name">{s.name}</span>
+              </div>
               <span className="day-overview-cal">{s.kind === "empty" ? "—" : `${Math.round(s.totals.calories)} kcal`}</span>
             </li>
           ))}

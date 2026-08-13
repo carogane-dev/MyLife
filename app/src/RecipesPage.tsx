@@ -10,6 +10,7 @@ import {
 import type { MealSlot, RecipeSummary, RecipeDetail, RecipeDraft, RecipeIngredient, RecipeFilters } from "./api.js";
 import { MEAL_SLOTS } from "./api.js";
 import { useToast } from "./ToastProvider.js";
+import DishIconTile from "./DishIconTile.js";
 import Skeleton from "./Skeleton.js";
 
 const CATEGORIES = ["Petit-déjeuner", "Plat", "Entrée", "Dessert", "Snack"];
@@ -545,6 +546,7 @@ export default function RecipesPage({ onBack }: { onBack: () => void }) {
         {recipes?.map((r) => (
           <article className="recipe-card" key={r.id} onClick={() => openDetail(r.id)}>
             <div className="recipe-card-header">
+              <DishIconTile name={r.name} size={36} />
               <h3>{r.name}</h3>
               <button
                 className={`recipe-like-button ${r.likedByMe ? "liked" : ""}`}

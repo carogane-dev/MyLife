@@ -4,6 +4,7 @@ import type { FridgeItem } from "./api.js";
 import FridgeItemFormPage from "./FridgeItemFormPage.js";
 import { useToast } from "./ToastProvider.js";
 import Skeleton from "./Skeleton.js";
+import CategoryIconTile from "./CategoryIconTile.js";
 
 type GroupedItems = Record<string, Record<string, FridgeItem[]>>;
 type SortBy = "expiration" | "weight" | "name";
@@ -208,7 +209,8 @@ export default function FridgePage({ onBack }: { onBack: () => void }) {
                             return (
                               <li key={item.id}>
                                 <div className="fridge-item-row" onClick={() => toggle(itemKey)}>
-                                  <span>{item.name}</span>
+                                  <CategoryIconTile category={item.category} size={36} />
+                                  <span className="fridge-item-name">{item.name}</span>
                                   <span className="fridge-item-meta">
                                     <span className={`fridge-expiry ${expiry.urgency}`}>{expiry.label}</span>
                                     <span>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import DishIconTile from "./DishIconTile.js";
 import {
   acceptWeekPlanEntry,
   getWeekPlan,
@@ -220,6 +221,7 @@ export default function WeekPlanPage({ onBack }: { onBack: () => void }) {
                   <ul className="meal-item-list">
                     {day.slots.map((assignment) => (
                       <li className="meal-item-row week-plan-slot-row" key={assignment.entryId}>
+                        {assignment.match && <DishIconTile name={assignment.match.recipeName} size={40} />}
                         <div className="week-plan-slot-main">
                           <span className="meal-item-name">
                             {SLOT_LABELS[assignment.slot]}
