@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
-import { getMealSuggestion, markItemEaten, getRecipeSuggestion, logManualConsumption } from "./api.js";
-import type { MealSlot, MealSuggestion, RecipeMatch } from "./api.js";
+import { getMealSuggestion, markItemEaten } from "./api.js";
+import type { MealSlot, MealSuggestion } from "./api.js";
 import { useToast } from "./ToastProvider.js";
-
-type Source = "fridge" | "recipe";
 
 const SLOT_LABELS: Record<MealSlot, string> = {
   "petit-dejeuner": "🌅 Petit-déjeuner",
@@ -21,11 +19,14 @@ function defaultSlotFromHour(): MealSlot {
   return "diner";
 }
 
+// Composeur ad-hoc frigo-only : toute composition manuelle de repas part du
+// stock réel, jamais d'une recette communautaire par défaut (ce fallback
+// reste réservé aux propositions automatiques de DayOverview/weekPlanner,
+// qui l'exposent explicitement comme un repli quand le frigo seul ne suffit
+// pas — pas comme un choix équivalent ici).
 export default function MealBuilderPage({ onBack }: { onBack: () => void }) {
-  const [source, setSource] = useState<Source>("fridge");
   const [slot, setSlot] = useState<MealSlot>(defaultSlotFromHour);
   const [suggestion, setSuggestion] = useState<MealSuggestion | null>(null);
-  const [recipeMatch, setRecipeMatch] = useState<RecipeMatch | null>(null);
   const [reason, setReason] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [eating, setEating] = useState(false);
@@ -38,74 +39,41 @@ export default function MealBuilderPage({ onBack }: { onBack: () => void }) {
     if (error) showToast(error);
   }, [error, showToast]);
 
-  function load(currentSource: Source, currentSlot: MealSlot, excludeIds: string[] = [], meals = mealsRemaining) {
+  function load(currentSlot: MealSlot, excludeIds: string[] = [], meals = mealsRemaining) {
     setLoading(true);
     setError(null);
     setEaten(false);
-    const request =
-      currentSource === "fridge"
-        ? getMealSuggestion(excludeIds, currentSlot, meals)
-        : getRecipeSuggestion(excludeIds, currentSlot, meals);
-    request
+    getMealSuggestion(excludeIds, currentSlot, meals)
       .then((result) => {
-        if (currentSource === "fridge") {
-          setSuggestion((result as { suggestion: MealSuggestion | null }).suggestion);
-          setRecipeMatch(null);
-        } else {
-          setRecipeMatch((result as { match: RecipeMatch | null }).match);
-          setSuggestion(null);
-        }
+        setSuggestion(result.suggestion);
         setReason(result.reason ?? null);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Une erreur est survenue."))
       .finally(() => setLoading(false));
   }
 
-  useEffect(() => load(source, slot), []);
-
-  function changeSource(next: Source) {
-    if (next === source) return;
-    setSource(next);
-    setSuggestion(null);
-    setRecipeMatch(null);
-    load(next, slot, []);
-  }
+  useEffect(() => load(slot), []);
 
   function changeSlot(next: MealSlot) {
     if (next === slot) return;
     setSlot(next);
     setSuggestion(null);
-    setRecipeMatch(null);
-    load(source, next, []);
+    load(next, []);
   }
 
   function changeMealsRemaining(value: number) {
     const clamped = Math.min(6, Math.max(1, value));
     setMealsRemaining(clamped);
-    load(source, slot, [], clamped);
+    load(slot, [], clamped);
   }
 
   async function handleEat() {
+    if (!suggestion) return;
     setEating(true);
     setError(null);
     try {
-      if (source === "fridge" && suggestion) {
-        for (const item of suggestion.items) {
-          await markItemEaten(item.fridgeItemId, item.quantity, slot);
-        }
-      } else if (source === "recipe" && recipeMatch) {
-        await logManualConsumption(
-          {
-            name: recipeMatch.recipeName,
-            quantity: 1,
-            unit: "portion",
-            calories: recipeMatch.totals.calories,
-            protein: recipeMatch.totals.protein,
-            fat: recipeMatch.totals.fat,
-            carbs: recipeMatch.totals.carbs,
-          },
-          slot
-        );
+      for (const item of suggestion.items) {
+        await markItemEaten(item.fridgeItemId, item.quantity, slot);
       }
       setEaten(true);
     } catch (err) {
@@ -116,15 +84,10 @@ export default function MealBuilderPage({ onBack }: { onBack: () => void }) {
   }
 
   function regenerate() {
-    if (source === "fridge" && suggestion) {
-      load(source, slot, suggestion.items.map((i) => i.fridgeItemId));
-    } else if (source === "recipe" && recipeMatch) {
-      load(source, slot, [recipeMatch.recipeId]);
+    if (suggestion) {
+      load(slot, suggestion.items.map((i) => i.fridgeItemId));
     }
   }
-
-  const hasResult = source === "fridge" ? !!suggestion : !!recipeMatch;
-  const totals = source === "fridge" ? suggestion?.totals : recipeMatch?.totals;
 
   return (
     <div className="meal-builder-page">
@@ -132,7 +95,7 @@ export default function MealBuilderPage({ onBack }: { onBack: () => void }) {
         ← Retour
       </button>
       <h2>🍳 Composer un repas</h2>
-      <p className="wizard-hint">Une suggestion basée sur {source === "fridge" ? "ton frigo" : "les recettes de la communauté"} et ce qu'il te reste à atteindre aujourd'hui.</p>
+      <p className="wizard-hint">Une suggestion basée sur ton frigo et ce qu'il te reste à atteindre aujourd'hui.</p>
 
       <div className="meal-slot-tabs">
         {(Object.keys(SLOT_LABELS) as MealSlot[]).map((s) => (
@@ -140,15 +103,6 @@ export default function MealBuilderPage({ onBack }: { onBack: () => void }) {
             {SLOT_LABELS[s]}
           </button>
         ))}
-      </div>
-
-      <div className="meal-source-tabs">
-        <button className={source === "fridge" ? "active" : ""} onClick={() => changeSource("fridge")}>
-          🧊 Depuis mon frigo
-        </button>
-        <button className={source === "recipe" ? "active" : ""} onClick={() => changeSource("recipe")}>
-          📖 Depuis une recette
-        </button>
       </div>
 
       <div className="meals-remaining-control">
@@ -166,63 +120,38 @@ export default function MealBuilderPage({ onBack }: { onBack: () => void }) {
 
       {loading && <p className="scan-status">Recherche des meilleurs ingrédients…</p>}
 
-      {!loading && !hasResult && reason && <p className="fridge-empty">{reason}</p>}
+      {!loading && !suggestion && reason && <p className="fridge-empty">{reason}</p>}
 
       {eaten && <p className="settings-saved-note">Repas enregistré, bon appétit ! 🎉</p>}
 
-      {!loading && source === "fridge" && suggestion && !eaten && (
-        <div className="meal-suggestion">
-          <ul className="meal-item-list">
-            {suggestion.items.map((item) => (
-              <li className="meal-item-row" key={item.fridgeItemId}>
-                <span className="meal-item-name">{item.name}</span>
-                <span className="meal-item-qty">
-                  {item.quantity} {item.unit}
-                </span>
-                <span className="meal-item-macros">{item.calories} kcal</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {!loading && source === "recipe" && recipeMatch && !eaten && (
-        <div className="meal-suggestion">
-          <h3 className="recipe-match-name">
-            {recipeMatch.recipeName}
-            {recipeMatch.liked && <span className="recipe-badge liked"> ❤️ Souvent accepté</span>}
-          </h3>
-          <ul className="meal-item-list">
-            {recipeMatch.ingredients.map((item, index) => (
-              <li className="meal-item-row" key={`${item.name}-${index}`}>
-                <span className="meal-item-name">
-                  {item.name}
-                  {item.flexible && <span className="recipe-flexible-tag">libre</span>}
-                </span>
-                <span className="meal-item-qty">
-                  {item.displayQuantity} {item.displayUnit}
-                </span>
-                <span className="meal-item-macros">{item.calories} kcal</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {!loading && hasResult && totals && !eaten && (
+      {!loading && suggestion && !eaten && (
         <>
+          <div className="meal-suggestion">
+            <ul className="meal-item-list">
+              {suggestion.items.map((item) => (
+                <li className="meal-item-row" key={item.fridgeItemId}>
+                  <span className="meal-item-name">{item.name}</span>
+                  <span className="meal-item-qty">
+                    {item.quantity} {item.unit}
+                  </span>
+                  <span className="meal-item-macros">{item.calories} kcal</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
           <div className="meal-suggestion-totals">
             <div>
-              <strong>{totals.calories}</strong> kcal
+              <strong>{suggestion.totals.calories}</strong> kcal
             </div>
             <div>
-              <strong>{totals.protein}</strong> g protéines
+              <strong>{suggestion.totals.protein}</strong> g protéines
             </div>
             <div>
-              <strong>{totals.fat}</strong> g lipides
+              <strong>{suggestion.totals.fat}</strong> g lipides
             </div>
             <div>
-              <strong>{totals.carbs}</strong> g glucides
+              <strong>{suggestion.totals.carbs}</strong> g glucides
             </div>
           </div>
 
