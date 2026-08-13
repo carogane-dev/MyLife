@@ -35,6 +35,7 @@ import BottomTabBar from "./BottomTabBar.js";
 import Skeleton from "./Skeleton.js";
 import DayOverview from "./DayOverview.js";
 import FridgeAutonomyWidget from "./FridgeAutonomyWidget.js";
+import WeekCoverageWidget from "./WeekCoverageWidget.js";
 import WeekDayStrip from "./WeekDayStrip.js";
 import "./App.css";
 
@@ -125,6 +126,7 @@ function HomeContent({
 
       {profile.goalMode !== "frigo_only" && <WeekDayStrip profile={profile} />}
       {profile.goalMode !== "frigo_only" && <DayOverview />}
+      {profile.goalMode !== "frigo_only" && <WeekCoverageWidget />}
       {profile.goalMode !== "frigo_only" && <FridgeAutonomyWidget />}
       {profile.goalMode !== "frigo_only" && <HomeProgress profile={profile} />}
       <GamificationSummary />

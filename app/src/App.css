@@ -2530,6 +2530,133 @@ h1, h2, h3, h4 {
   margin: 0 0 0.4rem;
 }
 
+.week-coverage {
+  margin-bottom: 1.5rem;
+}
+
+.week-coverage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.week-coverage-header h3 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.week-coverage-link {
+  border: none;
+  background: none;
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  padding: 0;
+}
+
+.week-coverage-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.week-coverage-row {
+  display: grid;
+  grid-template-columns: 1.5rem repeat(7, 1fr);
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.week-coverage-row-label {
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+.week-coverage-day-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.week-coverage-cell {
+  aspect-ratio: 1;
+  width: 100%;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: default;
+}
+
+.week-coverage-cell.empty {
+  background: transparent;
+  border: 1px dashed var(--color-border);
+}
+
+.week-coverage-cell.covered {
+  background: var(--tint-green-bg);
+}
+
+.week-coverage-cell.uncovered {
+  background: var(--color-surface-alt);
+  opacity: 0.5;
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.week-coverage-cell.uncovered:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.week-coverage-cell.accepted {
+  background: var(--tint-blue-bg);
+}
+
+.week-coverage-cell.eaten {
+  background: var(--tint-green-bg);
+  color: var(--tint-green-text);
+}
+
+.week-coverage-cell.exhausted {
+  background: var(--tint-coral-bg);
+}
+
+.week-coverage-cell:disabled {
+  cursor: default;
+}
+
+.week-coverage-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.6rem 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.week-coverage-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.week-coverage-legend-dot.covered {
+  background: var(--tint-green-bg);
+  margin-left: 0.5rem;
+}
+
+.week-coverage-legend-dot.uncovered {
+  background: var(--color-surface-alt);
+  opacity: 0.5;
+  margin-left: 0.5rem;
+}
+
 .day-overview-text {
   display: flex;
   flex-direction: column;
