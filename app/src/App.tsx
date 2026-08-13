@@ -1,5 +1,17 @@
 import { useEffect, useState } from "react";
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import {
+  Refrigerator,
+  ScanLine,
+  ChefHat,
+  BookOpen,
+  ShoppingCart,
+  Camera,
+  History,
+  BarChart3,
+  FlaskConical,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { checkHealth, getMe, getProfile, signOut } from "./api.js";
 import type { NutritionModeConfigEntry, NutritionProfile, User } from "./api.js";
 import { calculateNutritionTargets } from "./nutritionCalculator.js";
@@ -23,78 +35,59 @@ import BottomTabBar from "./BottomTabBar.js";
 import Skeleton from "./Skeleton.js";
 import DayOverview from "./DayOverview.js";
 import FridgeAutonomyWidget from "./FridgeAutonomyWidget.js";
+import WeekDayStrip from "./WeekDayStrip.js";
 import "./App.css";
 
 type ConnectionState = "checking" | "connected" | "error";
 type AuthState = "loading" | "authenticated" | "unauthenticated";
 
 interface Feature {
-  icon: string;
+  icon: LucideIcon;
   title: string;
   description: string;
-  path?: string;
+  path: string;
+  tint: "green" | "coral" | "amber" | "blue";
 }
 
-const FEATURES: Feature[] = [
+interface FeatureGroup {
+  label: string;
+  features: Feature[];
+}
+
+// Regroupées par usage plutôt qu'en grille plate : chaque groupe partage
+// une teinte de pastille, pour repérer d'un coup d'œil "à quoi ça sert"
+// avant même de lire le libellé. L'accès rapide aux fonctions les plus
+// fréquentes (Accueil/Frigo/Repas/Planning/Profil) reste dans la barre du
+// bas (BottomTabBar) — ces groupes couvrent le reste.
+const FEATURE_GROUPS: FeatureGroup[] = [
   {
-    icon: "🧊",
-    title: "Frigo",
-    description: "Parcours ce qu'il y a dans ton frigo.",
-    path: "/frigo",
+    label: "Frigo",
+    features: [
+      { icon: Refrigerator, title: "Frigo", description: "Parcours ce qu'il y a dans ton frigo.", path: "/frigo", tint: "green" },
+      { icon: ScanLine, title: "Scanner", description: "Ajoute un aliment par code-barres.", path: "/scan", tint: "green" },
+    ],
   },
   {
-    icon: "🏷️",
-    title: "Scanner",
-    description: "Scanne un code-barres pour ajouter un aliment au frigo.",
-    path: "/scan",
+    label: "Repas",
+    features: [
+      { icon: ChefHat, title: "Composer un repas", description: "Construit un repas équilibré à partir de ton frigo.", path: "/meal-builder", tint: "coral" },
+      { icon: BookOpen, title: "Recettes", description: "Découvre et partage des recettes avec la communauté.", path: "/recipes", tint: "coral" },
+      { icon: Camera, title: "Ajouter un repas", description: "Prends une photo, l'IA reconnaît le plat.", path: "/add-meal", tint: "coral" },
+    ],
   },
   {
-    icon: "🍳",
-    title: "Composer un repas",
-    description: "Construit un repas équilibré à partir de ton frigo.",
-    path: "/meal-builder",
+    label: "Planning",
+    features: [
+      { icon: ShoppingCart, title: "Courses", description: "Ce qu'il te manque pour la semaine, et les repas à construire toi-même.", path: "/courses", tint: "blue" },
+    ],
   },
   {
-    icon: "🍲",
-    title: "Recettes",
-    description: "Découvre et partage des recettes avec la communauté.",
-    path: "/recipes",
-  },
-  {
-    icon: "📅",
-    title: "Planning de la semaine",
-    description: "Compose automatiquement tes 21 prochains repas.",
-    path: "/week-plan",
-  },
-  {
-    icon: "🛒",
-    title: "Courses",
-    description: "Ce qu'il te manque pour la semaine, et les repas à construire toi-même.",
-    path: "/courses",
-  },
-  {
-    icon: "📷",
-    title: "Ajouter un repas",
-    description: "Prends une photo, l'IA reconnaît le plat.",
-    path: "/add-meal",
-  },
-  {
-    icon: "📖",
-    title: "Historique",
-    description: "Retrouve tous tes repas enregistrés.",
-    path: "/history",
-  },
-  {
-    icon: "📊",
-    title: "Statistiques",
-    description: "Visualise tes habitudes alimentaires.",
-    path: "/dashboard",
-  },
-  {
-    icon: "🔬",
-    title: "Données scientifiques",
-    description: "Les repères utilisés pour calculer tes objectifs et composer tes repas.",
-    path: "/scientific-data",
+    label: "Suivi",
+    features: [
+      { icon: History, title: "Historique", description: "Retrouve tous tes repas enregistrés.", path: "/history", tint: "amber" },
+      { icon: BarChart3, title: "Statistiques", description: "Visualise tes habitudes alimentaires.", path: "/dashboard", tint: "amber" },
+      { icon: FlaskConical, title: "Données scientifiques", description: "Les repères utilisés pour calculer tes objectifs et composer tes repas.", path: "/scientific-data", tint: "amber" },
+    ],
   },
 ];
 
@@ -130,6 +123,7 @@ function HomeContent({
         </p>
       </section>
 
+      {profile.goalMode !== "frigo_only" && <WeekDayStrip profile={profile} />}
       {profile.goalMode !== "frigo_only" && <DayOverview />}
       {profile.goalMode !== "frigo_only" && <FridgeAutonomyWidget />}
       {profile.goalMode !== "frigo_only" && <HomeProgress profile={profile} />}
@@ -139,20 +133,29 @@ function HomeContent({
         <span>Fonctions en test</span>
       </div>
 
-      <section className="feature-grid">
-        {FEATURES.map((feature) => (
-          <article
-            className={`feature-card ${feature.path ? "clickable" : ""}`}
-            key={feature.title}
-            onClick={feature.path ? () => navigate(feature.path!) : undefined}
-          >
-            <span className="icon">{feature.icon}</span>
-            <h3>{feature.title}</h3>
-            <p>{feature.description}</p>
-            {!feature.path && <span className="soon">Bientôt disponible</span>}
-          </article>
-        ))}
-      </section>
+      {FEATURE_GROUPS.map((group) => (
+        <section className="feature-group" key={group.label}>
+          <p className="feature-group-label">{group.label}</p>
+          <div className="feature-grid">
+            {group.features.map((feature) => {
+              const Icon = feature.icon;
+              return (
+                <article
+                  className="feature-card clickable"
+                  key={feature.title}
+                  onClick={() => navigate(feature.path)}
+                >
+                  <div className={`feature-card-icon tint-${feature.tint}`}>
+                    <Icon size={22} />
+                  </div>
+                  <h3>{feature.title}</h3>
+                  <p>{feature.description}</p>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      ))}
     </>
   );
 }
