@@ -365,11 +365,18 @@ export interface RecipeMatch {
   liked: boolean;
 }
 
+export interface MissingIngredient {
+  name: string;
+  displayQuantity: number;
+  displayUnit: string;
+  grams: number;
+}
+
 export async function getRecipeSuggestion(
   excludeIds: string[] = [],
   slot: MealSlot = "dejeuner",
   mealsRemaining = 3
-): Promise<{ match: RecipeMatch | null; reason?: string }> {
+): Promise<{ match: RecipeMatch | null; reason?: string; stockCovered?: boolean; missingIngredients?: MissingIngredient[] }> {
   const params = new URLSearchParams();
   if (excludeIds.length > 0) params.set("exclude", excludeIds.join(","));
   params.set("slot", slot);
@@ -379,13 +386,6 @@ export async function getRecipeSuggestion(
     credentials: "include",
   });
   return parseJsonOrThrow(res);
-}
-
-export interface MissingIngredient {
-  name: string;
-  displayQuantity: number;
-  displayUnit: string;
-  grams: number;
 }
 
 export type WeekPlanEntryStatus = "proposed" | "accepted" | "eaten" | "exhausted";

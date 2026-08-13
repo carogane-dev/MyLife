@@ -4,6 +4,7 @@ import { requireAuth } from "../middleware/requireAuth.js";
 import { isFiniteNumber, isNonEmptyString } from "../validation.js";
 import { computeDailyBudget, computeSlotBudget, isDayComplete, parseMealsRemaining } from "../dailyBudget.js";
 import { computeAffinityScores, findBestRecipeMatch } from "../recipeMatcher.js";
+import { computeMissingIngredients } from "../weekPlanner.js";
 import { isMealSlot } from "../mealSlots.js";
 import type { MealSlot } from "../mealSlots.js";
 
@@ -199,7 +200,15 @@ recipesRouter.get("/suggestion/for-meal", requireAuth, async (req, res) => {
     return;
   }
 
-  res.status(200).json({ match });
+  // Couverture par le stock actuel : absente jusqu'ici de ce composeur
+  // "un seul repas" (contrairement au planning hebdomadaire, qui la
+  // calcule déjà) — nécessaire pour que l'appelant puisse afficher "il te
+  // manque : ..." quand on retombe sur une recette faute de repas
+  // 100% frigo (voir DayOverview.tsx).
+  const fridgeItems = await prisma.fridgeItem.findMany({ where: { userId: req.user!.id, quantity: { gt: 0 } } });
+  const missingIngredients = computeMissingIngredients(match.ingredients, fridgeItems);
+
+  res.status(200).json({ match, stockCovered: missingIngredients.length === 0, missingIngredients });
 });
 
 recipesRouter.get("/:id", requireAuth, async (req, res) => {
