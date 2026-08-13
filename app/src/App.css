@@ -2703,6 +2703,58 @@ h1, h2, h3, h4 {
   margin-left: 0.5rem;
 }
 
+.expiry-widget {
+  margin-bottom: 1.5rem;
+}
+
+.expiry-widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.expiry-widget-header h3 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.expiry-widget-link {
+  border: none;
+  background: none;
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  padding: 0;
+}
+
+.expiry-widget-row {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 0.1rem;
+}
+
+.expiry-widget-chip {
+  flex: 0 0 auto;
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  background: var(--tint-amber-bg);
+  color: var(--tint-amber-text);
+}
+
+.expiry-widget-chip.expired {
+  background: var(--tint-coral-bg);
+  color: var(--tint-coral-text);
+}
+
+.expiry-widget-chip.more {
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+}
+
 .day-overview-text {
   display: flex;
   flex-direction: column;
