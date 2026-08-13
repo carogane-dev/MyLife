@@ -5,6 +5,7 @@ import FridgeItemFormPage from "./FridgeItemFormPage.js";
 import { useToast } from "./ToastProvider.js";
 import Skeleton from "./Skeleton.js";
 import CategoryIconTile from "./CategoryIconTile.js";
+import DishIconTile from "./DishIconTile.js";
 
 type GroupedItems = Record<string, Record<string, FridgeItem[]>>;
 type SortBy = "expiration" | "weight" | "name";
@@ -37,6 +38,20 @@ function formatExpiry(expiresAt: string): { label: string; urgency: "expired" | 
   if (diffDays < 0) return { label: `Expiré (${date})`, urgency: "expired" };
   if (diffDays <= 3) return { label: `Expire bientôt (${date})`, urgency: "soon" };
   return { label: date, urgency: "" };
+}
+
+// Résumé quantité visible directement sur la tuile catégorie, sans avoir à
+// cliquer — regroupe par unité (g/kg/pièce/ml...) plutôt que de sommer des
+// unités incompatibles entre elles.
+function formatCategorySummary(items: FridgeItem[]): string {
+  const byUnit = new Map<string, number>();
+  for (const item of items) {
+    byUnit.set(item.unit, (byUnit.get(item.unit) ?? 0) + item.quantity);
+  }
+  const parts = Array.from(byUnit.entries()).map(([unit, total]) =>
+    unit === "g" && total >= 1000 ? `${(total / 1000).toFixed(1)} kg` : `${Math.round(total * 10) / 10} ${unit}`
+  );
+  return `${items.length} article${items.length > 1 ? "s" : ""} · ${parts.join(" · ")}`;
 }
 
 type Mode = "list" | "add" | "edit";
@@ -179,14 +194,47 @@ export default function FridgePage({ onBack }: { onBack: () => void }) {
         <p className="fridge-empty">Ton frigo est vide pour l'instant.</p>
       )}
 
+      {items !== null && items.length > 0 && (
+        <div className="fridge-category-grid">
+          {Object.entries(grouped).map(([category, subcategories]) => {
+            const catKey = `cat:${category}`;
+            const catExpanded = expanded.has(catKey);
+            const flatItems = Object.values(subcategories).flat();
+            const distinctNames = Array.from(new Set(flatItems.map((i) => i.name)));
+            const shownNames = distinctNames.slice(0, 5);
+            const extraCount = distinctNames.length - shownNames.length;
+            return (
+              <button
+                className={`fridge-category-tile ${catExpanded ? "expanded" : ""}`}
+                onClick={() => toggle(catKey)}
+                key={category}
+              >
+                <CategoryIconTile category={category} size={40} />
+                <span className="fridge-category-tile-name">{category}</span>
+                <span className="fridge-category-tile-summary">{formatCategorySummary(flatItems)}</span>
+                <span className="fridge-category-tile-icons">
+                  {shownNames.map((name) => (
+                    <DishIconTile key={name} name={name} size={22} />
+                  ))}
+                  {extraCount > 0 && <span className="fridge-category-tile-more">+{extraCount}</span>}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {Object.entries(grouped).map(([category, subcategories]) => {
         const catKey = `cat:${category}`;
         const catExpanded = expanded.has(catKey);
+        if (!catExpanded) return null;
         return (
-          <div className="fridge-category" key={category}>
-            <div className="fridge-category-header" onClick={() => toggle(catKey)}>
+          <div className="fridge-category-detail" key={category}>
+            <div className="fridge-category-detail-header">
               <span>{category}</span>
-              <span className={`chevron ${catExpanded ? "expanded" : ""}`}>▸</span>
+              <button className="fridge-category-collapse" onClick={() => toggle(catKey)}>
+                ✕ Réduire
+              </button>
             </div>
             {catExpanded && (
               <div className="fridge-subcategory-list">
