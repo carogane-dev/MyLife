@@ -64,7 +64,12 @@ export default function CoursesPage({ onBack }: { onBack: () => void }) {
       <button className="page-back" onClick={onBack}>
         ← Retour
       </button>
-      <h2>🛒 Courses</h2>
+      <div className="fridge-toolbar">
+        <h2>🛒 Courses</h2>
+        <button className="fridge-add-button" onClick={() => navigate("/scan?mode=shopping")}>
+          📷 Scanner mes courses
+        </button>
+      </div>
       <p className="wizard-hint">
         Ce qu'il te manque pour couvrir les 21 prochains repas, et les créneaux que le planning n'a pas réussi à
         composer automatiquement.

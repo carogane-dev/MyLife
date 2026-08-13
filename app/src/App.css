@@ -858,6 +858,63 @@ h1, h2, h3, h4 {
   margin: 0 auto;
 }
 
+.scan-cart {
+  list-style: none;
+  margin: 0 auto 1rem;
+  padding: 0;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.scan-cart-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--tint-green-bg);
+}
+
+.scan-cart-item.unmatched {
+  background: var(--tint-amber-bg);
+}
+
+.scan-cart-item-name {
+  flex: 1;
+  font-size: var(--text-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scan-cart-item-tag {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.scan-cart-item-remove {
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0 0.15rem;
+}
+
+.scan-cart-bar {
+  position: sticky;
+  bottom: 4.5rem;
+  max-width: 380px;
+  margin: 1rem auto 0;
+}
+
+.scan-cart-bar button {
+  width: 100%;
+}
+
 .scan-confirm-card h3 {
   margin: 0 0 0.25rem;
 }
