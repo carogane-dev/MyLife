@@ -97,11 +97,39 @@ function normalizeName(name: string): string {
 // insensible à la casse/accents dans les deux sens. Imprécis par nature
 // (ratera "Poulet grillé" vs "Blanc de poulet" par exemple) : la détection
 // de couverture qui en découle est indicative, pas garantie.
-function matchesIngredientName(ingredientName: string, fridgeName: string): boolean {
+export function matchesIngredientName(ingredientName: string, fridgeName: string): boolean {
   const a = normalizeName(ingredientName);
   const b = normalizeName(fridgeName);
   if (!a || !b) return false;
   return a.includes(b) || b.includes(a);
+}
+
+// Version autonome (une seule recette contre le stock complet, pas de
+// décrémentation partagée entre plusieurs repas) de la logique déjà
+// utilisée dans la boucle de generateWeekPlan — extraite pour être
+// réutilisable par le composeur "un seul repas" (routes/recipes.ts
+// /suggestion/for-meal), qui n'avait jusqu'ici aucune notion de couverture
+// de stock contrairement au planning hebdomadaire.
+export function computeMissingIngredients(
+  ingredients: { name: string; grams: number; displayQuantity: number; displayUnit: string }[],
+  fridgeItems: { name: string; quantity: number; unit: string; unitWeightGrams: number | null }[]
+): MissingIngredient[] {
+  const workingStock = fridgeItems.map((i) => ({
+    name: i.name,
+    gramsAvailable: quantityToGrams(i.quantity, i.unit, i.unitWeightGrams),
+  }));
+  const missing: MissingIngredient[] = [];
+  for (const ingredient of ingredients) {
+    const stockItem = workingStock
+      .filter((s) => matchesIngredientName(ingredient.name, s.name) && s.gramsAvailable >= ingredient.grams)
+      .sort((a, b) => b.gramsAvailable - a.gramsAvailable)[0];
+    if (stockItem) {
+      stockItem.gramsAvailable -= ingredient.grams;
+    } else {
+      missing.push({ name: ingredient.name, displayQuantity: ingredient.displayQuantity, displayUnit: ingredient.displayUnit, grams: ingredient.grams });
+    }
+  }
+  return missing;
 }
 
 // Traduit une liste de noms d'ingrédients "bannis" (saisis par l'utilisateur

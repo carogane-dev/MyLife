@@ -5,12 +5,18 @@ export default function MealDetailSheet({
   slotData,
   fridgeItems,
   slotLabel,
+  busy,
   onClose,
+  onReroll,
+  onMarkEaten,
 }: {
   slotData: SlotMealData;
   fridgeItems: FridgeItem[];
   slotLabel: string;
+  busy?: boolean;
   onClose: () => void;
+  onReroll?: () => void;
+  onMarkEaten?: () => void;
 }) {
   return (
     <div className="sheet-backdrop" onClick={onClose}>
@@ -24,6 +30,12 @@ export default function MealDetailSheet({
             ✕
           </button>
         </div>
+
+        {slotData.source === "recipe" && slotData.kind === "proposed" && (
+          <p className="sheet-recipe-note">
+            Ton frigo seul ne suffit pas pour ce créneau — voici la recette la plus proche de ton objectif.
+          </p>
+        )}
 
         <div className="sheet-totals">
           <span>{Math.round(slotData.totals.calories)} kcal</span>
@@ -44,13 +56,32 @@ export default function MealDetailSheet({
                   {item.unit} utilisé{item.quantity > 1 ? "s" : ""}
                 </span>
                 <span className="sheet-item-remaining">
-                  {remaining !== null ? `${remaining}${item.unit} restant après ce repas` : "Stock inconnu"}
+                  {slotData.source === "fridge"
+                    ? remaining !== null
+                      ? `${remaining}${item.unit} restant après ce repas`
+                      : "Stock inconnu"
+                    : "Recette communautaire"}
                 </span>
               </li>
             );
           })}
           {slotData.items.length === 0 && <li className="sheet-item-empty">Aucun détail disponible pour ce repas.</li>}
         </ul>
+
+        {(onReroll || onMarkEaten) && (
+          <div className="week-plan-review-actions sheet-actions">
+            {onReroll && (
+              <button className="week-plan-review-reject" onClick={onReroll} disabled={busy}>
+                {busy ? "…" : "🔄 Autre proposition"}
+              </button>
+            )}
+            {onMarkEaten && (
+              <button className="week-plan-review-accept" onClick={onMarkEaten} disabled={busy}>
+                {busy ? "…" : "✅ J'ai mangé ce repas"}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
