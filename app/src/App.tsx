@@ -36,6 +36,7 @@ import Skeleton from "./Skeleton.js";
 import DayOverview from "./DayOverview.js";
 import FridgeAutonomyWidget from "./FridgeAutonomyWidget.js";
 import WeekCoverageWidget from "./WeekCoverageWidget.js";
+import ExpiryWidget from "./ExpiryWidget.js";
 import WeekDayStrip from "./WeekDayStrip.js";
 import "./App.css";
 
@@ -124,6 +125,7 @@ function HomeContent({
         </p>
       </section>
 
+      <ExpiryWidget />
       {profile.goalMode !== "frigo_only" && <WeekDayStrip profile={profile} />}
       {profile.goalMode !== "frigo_only" && <DayOverview />}
       {profile.goalMode !== "frigo_only" && <WeekCoverageWidget />}
